@@ -7,7 +7,8 @@
 #include "stm32l4xx.h"
 #include "stm32l4xx_hal_gpio.h"
 #include "stm32l4xx_hal_spi.h"
-#include "sx1272.h"
+
+#include "../radio/sx1272.h"
 
 bool sx1272_armed = false;
 sx_region_t sx1272_region = {.channel = 0, .dBm = 0};
@@ -37,12 +38,12 @@ void delay_us(const int us)
 void sx_select()
 {
 	HAL_NVIC_DisableIRQ(SXDIO0_EXTI8_nIRQ);
-	HAL_GPIO_WritePin(SXSEL_GPIO_Port, SXSEL_Pin, RESET);
+	HAL_GPIO_WritePin(SXSEL_GPIO_Port, SXSEL_Pin, GPIO_PIN_RESET);
 }
 
 void sx_unselect()
 {
-	HAL_GPIO_WritePin(SXSEL_GPIO_Port, SXSEL_Pin, SET);
+	HAL_GPIO_WritePin(SXSEL_GPIO_Port, SXSEL_Pin, GPIO_PIN_SET);
 	HAL_NVIC_EnableIRQ(SXDIO0_EXTI8_nIRQ);
 }
 
@@ -126,26 +127,26 @@ bool sx_setOpMode(uint8_t mode)
 	case LORA_RXCONT_MODE:
 	case LORA_CAD_MODE:
 #ifdef SXTX_Pin
-		HAL_GPIO_WritePin(SXTX_GPIO_Port, SXTX_Pin, RESET);
+		HAL_GPIO_WritePin(SXTX_GPIO_Port, SXTX_Pin, GPIO_PIN_RESET);
 #endif
 #ifdef SXRX_Pin
-		HAL_GPIO_WritePin(SXRX_GPIO_Port, SXRX_Pin, SET);
+		HAL_GPIO_WritePin(SXRX_GPIO_Port, SXRX_Pin, GPIO_PIN_SET);
 #endif
 	break;
 	case LORA_TX_MODE:
 #ifdef SXRX_Pin
-		HAL_GPIO_WritePin(SXRX_GPIO_Port, SXRX_Pin, RESET);
+		HAL_GPIO_WritePin(SXRX_GPIO_Port, SXRX_Pin, GPIO_PIN_RESET);
 #endif
 #ifdef SXTX_Pin
-		HAL_GPIO_WritePin(SXTX_GPIO_Port, SXTX_Pin, SET);
+		HAL_GPIO_WritePin(SXTX_GPIO_Port, SXTX_Pin, GPIO_PIN_SET);
 #endif
 	break;
 	default:
 #ifdef SXTX_Pin
-		HAL_GPIO_WritePin(SXTX_GPIO_Port, SXTX_Pin, RESET);
+		HAL_GPIO_WritePin(SXTX_GPIO_Port, SXTX_Pin, GPIO_PIN_RESET);
 #endif
 #ifdef SXRX_Pin
-		HAL_GPIO_WritePin(SXRX_GPIO_Port, SXRX_Pin, RESET);
+		HAL_GPIO_WritePin(SXRX_GPIO_Port, SXRX_Pin, GPIO_PIN_RESET);
 #endif
 		break;
 	}
@@ -255,9 +256,9 @@ bool sx1272_init(SPI_HandleTypeDef *spi)
 	//note: spi configured in spi.c
 
 	/* Reset pulse for LoRa module initialization */
-	HAL_GPIO_WritePin(SXRESET_GPIO_Port, SXRESET_Pin, SET);
+	HAL_GPIO_WritePin(SXRESET_GPIO_Port, SXRESET_Pin, GPIO_PIN_SET);
 	HAL_Delay(1);
-	HAL_GPIO_WritePin(SXRESET_GPIO_Port, SXRESET_Pin, RESET);
+	HAL_GPIO_WritePin(SXRESET_GPIO_Port, SXRESET_Pin, GPIO_PIN_RESET);
 	HAL_Delay(6);
 
 	/* set Lora mode, this is only possible during sleep -> do it twice */

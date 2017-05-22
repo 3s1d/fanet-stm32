@@ -56,8 +56,11 @@
 
 /* USER CODE BEGIN Includes */
 
-#include "com/serial.h"
-#include "fanet-stack/sx1272.h"
+#include <math.h>
+#include "fanet/fanet.h"
+#include "fanet/radio/sx1272.h"
+#include "serial.h"
+
 
 /* USER CODE END Includes */
 
@@ -125,13 +128,13 @@ int main(void)
 
 #ifdef DEBUG
 	/* semihosting */
-	initialise_monitor_handles();
+	initialise_monitor_handles();//todo
+	printf("semi hosting\n");
 #endif
-	printf("los\n");
 	/* initialize serial */
-	serial_init(HAL_UART_get());
 
-	printf("sx %d\n", sx1272_init(HAL_SPI_get()));
+	serial_t *serial = serial_init(HAL_UART_get());
+	fanet_init(serial);
 
   /* USER CODE END 2 */
 
@@ -139,7 +142,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 	while (1)
 	{
-		serial_poll();
+		fanet_loop();
 
   /* USER CODE END WHILE */
 

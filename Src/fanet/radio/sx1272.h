@@ -1,8 +1,15 @@
 #ifndef SX1272_h
 #define SX1272_h
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <inttypes.h>
+
+#include "stm32l4xx.h"
+#include "stm32l4xx_hal_spi.h"
 
 #define SX1272_debug_mode 				0
 
@@ -244,4 +251,9 @@ int sx1272_sendFrame(uint8_t *data, int length);
 int sx1272_receiveFrame(uint8_t *data, int max_length);
 bool sx1272_receiveStart(void);
 int sx1272_getFrame(uint8_t *data, int max_length);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

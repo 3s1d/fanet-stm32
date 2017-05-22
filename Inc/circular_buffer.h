@@ -17,7 +17,7 @@ typedef struct
 } circBuf_t;
 
 #define CIRC_BUF_DEF(x,y)          \
-    uint8_t x##_space[y];     \
+    uint8_t x##_space[y];  	   \
     circBuf_t x = {               \
         .buffer = x##_space,      \
         .head = 0,                \

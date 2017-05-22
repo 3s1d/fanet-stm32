@@ -8,6 +8,11 @@
 #ifndef FANET_STACK_FMAC_H_
 #define FANET_STACK_FMAC_H_
 
+#include <stdint.h>
+#include <stdbool.h>
+#include <string.h>
+#include <math.h>
+
 /*
  * Timing defines
  * ONLY change if you know what you are doing. Can destroy the hole nearby network!
@@ -75,6 +80,12 @@
 //#define SerialDEBUG				Serial1
 #define MAC_debug_mode				2
 
+//#include "main.h"
+#include "stm32l4xx.h"
+#include "stm32l4xx_hal.h"
+
+#include "../lib/LinkedList.h"
+#include "../lib/TimerObject.h"
 
 /* note: zero copy stack might be faster and more memory efficient, but who cares @ 9kBaud and 64Ks of ram... */
 
@@ -103,9 +114,9 @@ private:
 public:
 	const MacAddr addr;
 
-	NeighborNode(MacAddr addr) : addr(addr) { last_seen = millis(); }
-	void seen(void) { last_seen = millis(); }
-	bool isaround(void) { return last_seen + NEIGHBOR_MAX_TIMEOUT_MS > millis();}
+	NeighborNode(MacAddr addr) : addr(addr) { last_seen = HAL_GetTick(); }
+	void seen(void) { last_seen = HAL_GetTick(); }
+	bool isaround(void) { return last_seen + NEIGHBOR_MAX_TIMEOUT_MS > HAL_GetTick();}
 };
 
 class Frame
@@ -283,13 +294,13 @@ public:
 	virtual ~Fapp() {};
 
 	/* device -> air */
-	virtual boolean is_broadcast_ready(int num_neighbors) = 0;
+	virtual bool is_broadcast_ready(int num_neighbors) = 0;
 	virtual void broadcast_successful(int type) = 0;
 	virtual Frame *get_frame() = 0;
 
 	/* air -> device */
+	virtual void handle_acked(bool ack, MacAddr &addr) = 0;
 	virtual void handle_frame(Frame *frm) = 0;
-	virtual void handle_acked(boolean ack, MacAddr &addr) = 0;
 };
 
 class MacFifo

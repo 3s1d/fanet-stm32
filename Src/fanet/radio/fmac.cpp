@@ -4,54 +4,69 @@
  *  Created on: 30 Sep 2016
  *      Author: sid
  */
+
+#include <stdlib.h>
 #include <math.h>
 
-#include "../fanet_stack/fmac.h"
-#include "../fanet_stack/sx1272.h"
+#include "stm32l4xx.h"
+#include "stm32l4xx_hal.h"
+#include "spi.h"
+
+#include "../lib/random.h"
+#include "../radio/sx1272.h"
+#include "../radio/fmac.h"
+
 
 /* get next frame which can be sent out */
 //todo: this is potentially dangerous, as frm may be deleted in another place.
 Frame* MacFifo::get_nexttx()
 {
 	int next;
-	noInterrupts();
-	for(next = 0; next<fifo.size(); next++)
-		if(fifo.get(next)->next_tx < millis())
+	uint32_t prim = __get_PRIMASK();
+	__disable_irq();
+	for (next = 0; next < fifo.size(); next++)
+		if (fifo.get(next)->next_tx < HAL_GetTick())
 			break;
 	Frame *frm;
-	if(next == fifo.size())
+	if (next == fifo.size())
 		frm = NULL;
 	else
 		frm = fifo.get(next);
-	interrupts();
+	if (!prim)
+		__enable_irq();
 
 	return frm;
 }
 
 Frame* MacFifo::frame_in_list(Frame *frm)
 {
-	noInterrupts();
+	uint32_t prim = __get_PRIMASK();
+	__disable_irq();
 
-	for(int i=0; i<fifo.size(); i++)
+	for (int i = 0; i < fifo.size(); i++)
 	{
 		Frame *frm_list = fifo.get(i);
-		if(*frm_list == *frm)
+		if (*frm_list == *frm)
 		{
-			interrupts();
+			if (!prim)
+				__enable_irq();
 			return frm_list;
 		}
 	}
 
-	interrupts();
+	if (!prim)
+		__enable_irq();
 
 	return NULL;
 }
 
 Frame* MacFifo::front()
 {
-	noInterrupts();
+	uint32_t prim = __get_PRIMASK();
+	__disable_irq();
 	Frame *frm = fifo.shift();
-	interrupts();
+	if (!prim)
+		__enable_irq();
 
 	return frm;
 }
@@ -59,40 +74,44 @@ Frame* MacFifo::front()
 /* add frame to fifo */
 int MacFifo::add(Frame *frm)
 {
-	noInterrupts();
+	uint32_t prim = __get_PRIMASK();
+	__disable_irq();
 
 	/* buffer full */
 	/* note: ACKs will always fit */
-	if(fifo.size() >= MAC_FIFO_SIZE && frm->type != FRM_TYPE_ACK)
+	if (fifo.size() >= MAC_FIFO_SIZE && frm->type != FRM_TYPE_ACK)
 	{
-		interrupts();
+		if (!prim)
+			__enable_irq();
 		return -1;
 	}
 
 	/* only one ack_requested from us to a specific address at a time is allowed in the queue */
 	//in order not to screw with the awaiting of ACK
-	if(frm->ack_requested)
+	if (frm->ack_requested)
 	{
-		for(int i=0; i<fifo.size(); i++)
+		for (int i = 0; i < fifo.size(); i++)
 		{
 			//note: this never succeeds for received packets -> tx condition only
 			Frame *ffrm = fifo.get(i);
-			if(frm->ack_requested && ffrm->src == fmac.my_addr && ffrm->dest == frm->dest)
+			if (frm->ack_requested && ffrm->src == fmac.my_addr && ffrm->dest == frm->dest)
 			{
-				interrupts();
+				if (!prim)
+					__enable_irq();
 				return -2;
 			}
 		}
 	}
 
-	if(frm->type == FRM_TYPE_ACK)
+	if (frm->type == FRM_TYPE_ACK)
 		/* add to front */
 		fifo.unshift(frm);
 	else
 		/* add to tail */
 		fifo.add(frm);
 
-	interrupts();
+	if (!prim)
+		__enable_irq();
 	return 0;
 }
 
@@ -101,14 +120,16 @@ bool MacFifo::remove_delete(Frame *frm)
 {
 	bool found = false;
 
-	noInterrupts();
-	for(int i=0; i<fifo.size() && !found; i++)
-		if(frm == fifo.get(i))
+	uint32_t prim = __get_PRIMASK();
+	__disable_irq();
+	for (int i = 0; i < fifo.size() && !found; i++)
+		if (frm == fifo.get(i))
 		{
 			delete fifo.remove(i);
 			found = true;
 		}
-	interrupts();
+	if (!prim)
+		__enable_irq();
 
 	return found;
 }
@@ -117,18 +138,20 @@ bool MacFifo::remove_delete(Frame *frm)
 bool MacFifo::remove_delete_acked_frame(MacAddr dest)
 {
 	bool found = false;
-	noInterrupts();
+	uint32_t prim = __get_PRIMASK();
+	__disable_irq();
 
-	for(int i=0; i<fifo.size(); i++)
+	for (int i = 0; i < fifo.size(); i++)
 	{
 		Frame* frm = fifo.get(i);
-		if(frm->ack_requested && frm->dest == dest)
+		if (frm->ack_requested && frm->dest == dest)
 		{
 			delete fifo.remove(i);
 			found = true;
 		}
 	}
-	interrupts();
+	if (!prim)
+		__enable_irq();
 	return found;
 }
 
@@ -136,8 +159,8 @@ bool MacFifo::remove_delete_acked_frame(MacAddr dest)
 void FanetMac::frame_received(int length)
 {
 	/* quickly read registers */
-	num_received = sx1272.getFrame(rx_frame, sizeof(rx_frame));
-	int rssi = sx1272.getRssi();
+	num_received = sx1272_getFrame(rx_frame, sizeof(rx_frame));
+	int rssi = sx1272_getRssi();
 
 #if defined(SerialDEBUG) && MAC_debug_mode > 0
 	SerialDEBUG.print(F("### Mac Rx: "));
@@ -150,7 +173,7 @@ void FanetMac::frame_received(int length)
 	{
 		SerialDEBUG.print(rx_frame[i], HEX);
 		if(i<num_received-1)
-			SerialDEBUG.print(":");
+		SerialDEBUG.print(":");
 	}
 	SerialDEBUG.println();
 #endif
@@ -160,7 +183,7 @@ void FanetMac::frame_received(int length)
 	frm->rssi = rssi;
 
 	/* add to fifo */
-	if(rx_fifo.add(frm) < 0)
+	if (rx_fifo.add(frm) < 0)
 		delete frm;
 }
 
@@ -180,41 +203,30 @@ bool FanetMac::begin(Fapp &app)
 	myApp = &app;
 
 	/* configure phy radio */
-	if(sx1272.begin() == false)
+	if (sx1272_init(HAL_SPI_get()) == false)
 		return false;
-	sx1272.setBandwidth(BW_250);
-	sx1272.setSpreadingFactor(SF_7);
-	sx1272.setCodingRate(CR_5);
-	sx1272.setExplicitHeader(true);
-	sx1272.setPayloadCrc(true);
-	sx1272.setLnaGain(LNAGAIN_G1_MAX, true);
-	sx1272.setIrqReceiver(frame_rx_wrapper);
+	sx1272_setBandwidth(BW_250);
+	sx1272_setSpreadingFactor(SF_7);
+	sx1272_setCodingRate(CR_5);
+	sx1272_setExplicitHeader(true);
+	sx1272_setPayloadCrc(true);
+	sx1272_setLnaGain(LNAGAIN_G1_MAX, true);
+	sx1272_setIrqReceiver(frame_rx_wrapper);
 
 	/* region specific. default is EU */
-	sx_region_t region = {.channel = CH_868_200, .dBm = 14};
-	sx1272.setRegion(region);
+	sx_region_t region;
+	region.channel = CH_868_200;
+	region.dBm = 14;
+	sx1272_setRegion(region);
 
 	/* enter sleep mode */
-	sx1272.setArmed(false);
+	sx1272_setArmed(false);
 
 	/* start state machine */
 	my_timer.Start();
 
 	/* start random machine */
-#if defined(ARDUINO_SAMD_ZERO) || defined(ARDUINO_SAMD_VARIANT_COMPLIANCE)
-	/* use the device ID */
-	volatile uint32_t *ptr1 = (volatile uint32_t *)0x0080A00C;
-	volatile uint32_t *ptr2 = (volatile uint32_t *)0x0080A040;
-	volatile uint32_t *ptr3 = (volatile uint32_t *)0x0080A044;
-	volatile uint32_t *ptr4 = (volatile uint32_t *)0x0080A048;
-	randomSeed(millis() + *ptr1 + *ptr2 + *ptr3 + *ptr4);
-#elif defined(STM32L432xx)
-	uint32_t uid[3];
-	STM32.getUID(uid);
-	randomSeed(millis() + uid[0] + uid[1] + uid[2]);
-#else
-	randomSeed(millis());
-#endif
+	randomSeed(HAL_GetUIDw0() + HAL_GetUIDw1() + HAL_GetUIDw2());
 
 	return true;
 }
@@ -223,7 +235,7 @@ bool FanetMac::begin(Fapp &app)
 void FanetMac::state_wrapper()
 {
 	/* only handle stuff during none-sleep mode */
-	if(!sx1272.isArmed())
+	if (!sx1272_isArmed())
 		return;
 
 	fmac.handle_rx();
@@ -232,8 +244,8 @@ void FanetMac::state_wrapper()
 
 bool FanetMac::isNeighbor(MacAddr addr)
 {
-	for(int i=0; i<neighbors.size(); i++)
-		if(neighbors.get(i)->addr == addr)
+	for (int i = 0; i < neighbors.size(); i++)
+		if (neighbors.get(i)->addr == addr)
 			return true;
 
 	return false;
@@ -254,12 +266,12 @@ void FanetMac::ack(Frame* frm)
 	ack->dest = frm->src;
 
 	/* only do a 2 hop ACK in case it was requested and we received it via a two hop link (= forward bit is not set anymore) */
-	if(frm->ack_requested == MAC_ACK_TWOHOP && !frm->forward)
+	if (frm->ack_requested == MAC_ACK_TWOHOP && !frm->forward)
 		ack->forward = true;
 
 	/* add to front of fifo */
 	//note: this will not fail by define
-	if(tx_fifo.add(ack) != 0)
+	if (tx_fifo.add(ack) != 0)
 		delete ack;
 }
 
@@ -269,12 +281,12 @@ void FanetMac::ack(Frame* frm)
 void FanetMac::handle_rx()
 {
 	/* nothing to do */
-	if(rx_fifo.size() == 0)
+	if (rx_fifo.size() == 0)
 	{
 		/* clean neighbors list */
-		for(int i=0; i<neighbors.size(); i++)
+		for (int i = 0; i < neighbors.size(); i++)
 		{
-			if(neighbors.get(i)->isaround() == false)
+			if (neighbors.get(i)->isaround() == false)
 				delete neighbors.remove(i);
 		}
 
@@ -285,9 +297,9 @@ void FanetMac::handle_rx()
 
 	/* build up neighbors list */
 	bool neighbor_known = false;
-	for(int i=0; i<neighbors.size(); i++)
+	for (int i = 0; i < neighbors.size(); i++)
 	{
-		if(neighbors.get(i)->addr == frm->src)
+		if (neighbors.get(i)->addr == frm->src)
 		{
 			/* update presents */
 			neighbors.get(i)->seen();
@@ -296,23 +308,22 @@ void FanetMac::handle_rx()
 		}
 	}
 	/* neighbor unknown until now, add to list */
-	if(neighbor_known == false)
+	if (neighbor_known == false)
 	{
 		/* too many neighbors, delete oldest member */
-		if(neighbors.size() > MAC_NEIGHBOR_SIZE)
+		if (neighbors.size() > MAC_NEIGHBOR_SIZE)
 			delete neighbors.shift();
 
 		neighbors.add(new NeighborNode(frm->src));
 	}
 
-
 	/* is the frame a forwarded one and is it still in the tx queue? */
 	Frame *frm_list = tx_fifo.frame_in_list(frm);
-	if(frm_list != NULL)
+	if (frm_list != NULL)
 	{
 		/* frame already in tx queue */
 
-		if(frm->rssi > frm_list->rssi + MAC_FORWARD_MIN_DB_BOOST)
+		if (frm->rssi > frm_list->rssi + MAC_FORWARD_MIN_DB_BOOST)
 		{
 			/* somebody broadcasted it already towards our direction */
 #if defined(SerialDEBUG) && MAC_debug_mode > 0
@@ -327,34 +338,34 @@ void FanetMac::handle_rx()
 			SerialDEBUG.println(F("### adjusting tx time"));
 #endif
 			/* adjusting new departure time */
-			frm_list->next_tx = millis() + random(MAC_FORWARD_DELAY_MIN, MAC_FORWARD_DELAY_MAX);
+			frm_list->next_tx = HAL_GetTick() + random(MAC_FORWARD_DELAY_MIN, MAC_FORWARD_DELAY_MAX);
 		}
 	}
 	else
 	{
-		if((frm->dest == MacAddr() || frm->dest == my_addr) && frm->src != my_addr)
+		if ((frm->dest == MacAddr() || frm->dest == my_addr) && frm->src != my_addr)
 		{
 			/* a relevant frame */
-			if(frm->type == FRM_TYPE_ACK)
+			if (frm->type == FRM_TYPE_ACK)
 			{
-				if(tx_fifo.remove_delete_acked_frame(frm->src) && myApp != NULL)
+				if (tx_fifo.remove_delete_acked_frame(frm->src) && myApp != NULL)
 					myApp->handle_acked(true, frm->src);
 			}
 			else
 			{
 				/* generate ACK */
-				if(frm->ack_requested)
+				if (frm->ack_requested)
 					ack(frm);
 
 				/* forward frame */
-				if(myApp != NULL)
+				if (myApp != NULL)
 					myApp->handle_frame(frm);
 			}
 		}
 
 		/* Forward frame */
-		if(frm->forward && tx_fifo.size() < MAC_FIFO_SIZE - 3 && frm->rssi <= MAC_FORWARD_MAX_RSSI_DBM &&
-				(frm->dest == MacAddr() || isNeighbor(frm->dest)))
+		if (frm->forward && tx_fifo.size() < MAC_FIFO_SIZE - 3 && frm->rssi <= MAC_FORWARD_MAX_RSSI_DBM
+				&& (frm->dest == MacAddr() || isNeighbor(frm->dest)))
 		{
 #if defined(SerialDEBUG) && MAC_debug_mode > 0
 			SerialDEBUG.println(F("### adding new forward frame"));
@@ -363,7 +374,7 @@ void FanetMac::handle_rx()
 			frm->forward = false;
 
 			/* generate new tx time */
-			frm->next_tx = millis() + random(MAC_FORWARD_DELAY_MIN, MAC_FORWARD_DELAY_MAX);
+			frm->next_tx = HAL_GetTick() + random(MAC_FORWARD_DELAY_MIN, MAC_FORWARD_DELAY_MAX);
 
 			/* add to list */
 			tx_fifo.add(frm);
@@ -381,23 +392,23 @@ void FanetMac::handle_rx()
 void FanetMac::handle_tx()
 {
 	/* still in backoff */
-	if(millis() < csma_next_tx)
+	if (HAL_GetTick() < csma_next_tx)
 		return;
 
 	/* find next send-able packet */
 	/* this breaks the layering. however, this approach is much more efficient as the app layer now has a much higher priority */
 	Frame* frm;
 	bool app_tx = false;
-	if(myApp->is_broadcast_ready(neighbors.size()))
+	if (myApp->is_broadcast_ready(neighbors.size()))
 //todo: check if first element of txfifo is not an ACK!
 	{
 		/* the app wants to broadcast the glider state */
 		frm = myApp->get_frame();
-		if(frm == NULL)
+		if (frm == NULL)
 			return;
 
 //todo?? set forward bit only if no inet base station is available, this MAY break the layers
-		if(neighbors.size() <= MAC_MAXNEIGHBORS_4_TRACKING_2HOP)
+		if (neighbors.size() <= MAC_MAXNEIGHBORS_4_TRACKING_2HOP)
 			frm->forward = true;
 		else
 			frm->forward = false;
@@ -408,25 +419,25 @@ void FanetMac::handle_tx()
 	{
 		/* get a from from the fifo */
 		frm = tx_fifo.get_nexttx();
-		if(frm == NULL)
+		if (frm == NULL)
 			return;
 
 		/* frame w/o a received ack and no more re-transmissions left */
-		if(frm->ack_requested && frm->num_tx <= 0)
+		if (frm->ack_requested && frm->num_tx <= 0)
 		{
 #if defined(SerialDEBUG) && MAC_debug_mode > 0
 			SerialDEBUG.print(F("### Frame, 0x"));
 			SerialDEBUG.print(frm->type, HEX);
 			SerialDEBUG.println(F(" NACK!"));
 #endif
-			if(myApp != NULL)
+			if (myApp != NULL)
 				myApp->handle_acked(false, frm->dest);
 			tx_fifo.remove_delete(frm);
 			return;
 		}
 
 		/* unicast frame w/o forwarding and it is not a direct neighbor */
-		if(frm->forward == false && frm->dest != MacAddr() && isNeighbor(frm->dest) == false)
+		if (frm->forward == false && frm->dest != MacAddr() && isNeighbor(frm->dest) == false)
 			frm->forward = true;
 
 		app_tx = false;
@@ -435,13 +446,13 @@ void FanetMac::handle_tx()
 	/* serialize frame */
 	uint8_t* buffer;
 	int blength = frm->serialize(buffer);
-	if(blength < 0)
+	if (blength < 0)
 	{
 #if defined(SerialDEBUG) && MAC_debug_mode > 0
 		SerialDEBUG.println(F("### Problem serialization. removing."));
 #endif
 		/* problem while assembling the frame */
-		if(app_tx)
+		if (app_tx)
 			delete frm;
 		else
 			tx_fifo.remove_delete(frm);
@@ -461,28 +472,28 @@ void FanetMac::handle_tx()
 	{
 		SerialDEBUG.print(buffer[i], HEX);
 		if(i<blength-1)
-			SerialDEBUG.print(F(":"));
+		SerialDEBUG.print(F(":"));
 	}
 	SerialDEBUG.print(F(" "));
 #endif
 
 	/* for only a few nodes around, increase the coding rate to ensure a more robust transmission */
-	if(neighbors.size() < MAC_CODING48_THRESHOLD)
-		sx1272.setCodingRate(CR_8);
+	if (neighbors.size() < MAC_CODING48_THRESHOLD)
+		sx1272_setCodingRate(CR_8);
 	else
-		sx1272.setCodingRate(CR_5);
+		sx1272_setCodingRate(CR_5);
 
 	/* channel free and transmit? */
-	int tx_ret = sx1272.sendFrame(buffer, blength);
+	int tx_ret = sx1272_sendFrame(buffer, blength);
 	delete[] buffer;
 
-	if(tx_ret == TX_OK)
+	if (tx_ret == TX_OK)
 	{
 #if defined(SerialDEBUG) && MAC_debug_mode > 0
 		SerialDEBUG.println(F("done."));
 #endif
 
-		if(app_tx)
+		if (app_tx)
 		{
 			/* app tx */
 			myApp->broadcast_successful(frm->type);
@@ -493,7 +504,7 @@ void FanetMac::handle_tx()
 			/* fifo tx */
 
 			/* transmission successful */
-			if(!frm->ack_requested)
+			if (!frm->ack_requested)
 			{
 				/* remove frame from FIFO */
 				tx_fifo.remove_delete(frm);
@@ -501,36 +512,36 @@ void FanetMac::handle_tx()
 			else
 			{
 				/* update next transmission */
-				if(--frm->num_tx > 0)
-					frm->next_tx = millis() + (MAC_TX_RETRANSMISSION_TIME * (MAC_TX_RETRANSMISSION_RETRYS - frm->num_tx));
+				if (--frm->num_tx > 0)
+					frm->next_tx = HAL_GetTick() + (MAC_TX_RETRANSMISSION_TIME * (MAC_TX_RETRANSMISSION_RETRYS - frm->num_tx));
 				else
-					frm->next_tx = millis() + MAC_TX_ACKTIMEOUT;
+					frm->next_tx = HAL_GetTick() + MAC_TX_ACKTIMEOUT;
 			}
 		}
 
 		/* ready for a new transmission */
 		csma_backoff_exp = MAC_TX_BACKOFF_EXP_MIN;
-		csma_next_tx = millis() + MAC_TX_MINTIME;
+		csma_next_tx = HAL_GetTick() + MAC_TX_MINTIME;
 	}
-	else if(tx_ret == TX_RX_ONGOING)
+	else if (tx_ret == TX_RX_ONGOING)
 	{
 #if defined(SerialDEBUG) && MAC_debug_mode > 0
 		SerialDEBUG.println(F("rx, abort."));
 #endif
 
-		if(app_tx)
+		if (app_tx)
 			delete frm;
 
 		/* channel busy, increment backoff exp */
-		if(csma_backoff_exp < MAC_TX_BACKOFF_EXP_MAX)
+		if (csma_backoff_exp < MAC_TX_BACKOFF_EXP_MAX)
 			csma_backoff_exp++;
 
 		/* next tx try */
-		csma_next_tx = millis() + random(1<<(MAC_TX_BACKOFF_EXP_MIN-1), 1<<csma_backoff_exp);
+		csma_next_tx = HAL_GetTick() + random(1 << (MAC_TX_BACKOFF_EXP_MIN - 1), 1 << csma_backoff_exp);
 
 #if defined(SerialDEBUG) && MAC_debug_mode > 0
 		SerialDEBUG.print(F("### backoff ("));
-		SerialDEBUG.print(csma_next_tx - millis());
+		SerialDEBUG.print(csma_next_tx - HAL_GetTick());
 		SerialDEBUG.println(F("ms)"));
 #endif
 	}
@@ -541,7 +552,7 @@ void FanetMac::handle_tx()
 		SerialDEBUG.println(F("### wow."));
 #endif
 
-		if(app_tx)
+		if (app_tx)
 			delete frm;
 	}
 }
@@ -549,6 +560,7 @@ void FanetMac::handle_tx()
 Frame::Frame()
 {
 	src = fmac.my_addr;
-};
+}
+;
 
 FanetMac fmac = FanetMac();
