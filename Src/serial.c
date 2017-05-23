@@ -54,6 +54,9 @@ serial_t *serial_init(UART_HandleTypeDef *uart)
 
 bool serial_poll(serial_t *serial, char *line, int num)
 {
+//	char buf[64];
+//	HAL_UART_Transmit_IT(serial->uart, (uint8_t *)buf,
+//			snprintf(buf, sizeof(buf), "h%d t%d\n", serial_uart_rx_buffer.head, serial_uart_rx_buffer.tail), 100);
 	if(serial == NULL || serial->num_cmds <= 0)
 		return false;
 

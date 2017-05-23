@@ -536,28 +536,32 @@ void Serial_Interface::print_line(const char *type, int key, const char *msg)
 		return;
 
 	/* general answer */
-	if(HAL_UART_Transmit(myserial->uart, (uint8_t *)type, strlen(type), 100) != HAL_OK)
-		return;
+	while(HAL_UART_Transmit_IT(myserial->uart, (uint8_t *)type, strlen(type)) == HAL_BUSY);
 
 	/* key */
 	char buf[64];
 	if(key > 0)
 	{
-		HAL_UART_Transmit(myserial->uart, (uint8_t *)buf, snprintf(buf, sizeof(buf), ",%d", key), 100);
+		size_t len = snprintf(buf, sizeof(buf), ",%d", key);
+		while(HAL_UART_Transmit_IT(myserial->uart, (uint8_t *)buf, len) == HAL_BUSY);
 
 		/* human readable message */
 		if(msg != NULL && strlen(msg) > 0)
-			HAL_UART_Transmit(myserial->uart, (uint8_t *)buf, snprintf(buf, sizeof(buf), ",%s", msg), 100);
+		{
+			len =  snprintf(buf, sizeof(buf), ",%s", msg);
+			while(HAL_UART_Transmit_IT(myserial->uart, (uint8_t *)buf,len) == HAL_BUSY);
+		}
 	}
 
-	HAL_UART_Transmit(myserial->uart, (uint8_t *)buf, snprintf(buf, sizeof(buf), "\n"), 100);
+	while(HAL_UART_Transmit_IT(myserial->uart, (uint8_t *)"\n", 1) == HAL_BUSY);
 }
 
 void Serial_Interface::print(char *str)
 {
 	if(myserial == NULL || str == NULL)
 		return;
-	HAL_UART_Transmit(myserial->uart, (uint8_t *)str, strlen(str), 100);
+
+	while(HAL_UART_Transmit_IT(myserial->uart, (uint8_t *)str, strlen(str)) == HAL_BUSY);
 }
 
 Serial_Interface serial_int = Serial_Interface();
