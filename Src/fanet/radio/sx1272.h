@@ -224,7 +224,7 @@ void sx1272_setPayloadCrc(bool crc);
 void sx1272_setSpreadingFactor(uint8_t spr);
 uint8_t sx1272_getSpreadingFactor(void);
 
-void sx1272_setCodingRate(uint8_t cr);
+bool sx1272_setCodingRate(uint8_t cr);
 uint8_t sx1272_getCodingRate(void);
 
 bool sx1272_setChannel(uint32_t ch);
@@ -247,7 +247,7 @@ bool sx1272_setRegion(sx_region_t region);
 
 int sx1272_getRssi(void);
 
-int sx1272_sendFrame(uint8_t *data, int length);
+int sx1272_sendFrame(uint8_t *data, int length, uint8_t cr);
 int sx1272_receiveFrame(uint8_t *data, int max_length);
 bool sx1272_receiveStart(void);
 int sx1272_getFrame(uint8_t *data, int max_length);

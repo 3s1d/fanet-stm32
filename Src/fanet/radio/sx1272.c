@@ -417,7 +417,7 @@ uint8_t sx1272_getSpreadingFactor(void)
 	return sf;
 }
 
-void sx1272_setCodingRate(uint8_t cr)
+bool sx1272_setCodingRate(uint8_t cr)
 {
 #if (SX1272_debug_mode > 0)
 	Serial.print(F("## SX1272 CR: "));
@@ -426,10 +426,12 @@ void sx1272_setCodingRate(uint8_t cr)
 
 	/* store state */
 	uint8_t opmode = sx_getOpMode();
+	if(opmode == LORA_TX_MODE)
+		return false;
 
 	/* set appropriate mode */
-	if(opmode != LORA_STANDBY_MODE)
-		sx_setOpMode(LORA_STANDBY_MODE);
+	if(opmode != LORA_STANDBY_MODE && !sx_setOpMode(LORA_STANDBY_MODE))
+		return false;
 
 	uint8_t config1 = sx_readRegister(REG_MODEM_CONFIG1);
 	config1 = (cr&CR_MASK) | (config1&~CR_MASK);
@@ -437,7 +439,9 @@ void sx1272_setCodingRate(uint8_t cr)
 
 	/* restore state */
 	if(opmode != LORA_STANDBY_MODE)
-		sx_setOpMode(opmode);
+		return sx_setOpMode(opmode);
+	else
+		return true;
 }
 
 uint8_t sx1272_getCodingRate(void)
@@ -715,7 +719,7 @@ int sx1272_getRssi(void)
 }
 
 /***********************************/
-int sx1272_sendFrame(uint8_t *data, int length)
+int sx1272_sendFrame(uint8_t *data, int length, uint8_t cr)
 {
 #if (SX1272_debug_mode > 0)
 	Serial.print(F("## SX1272 send frame..."));
@@ -760,6 +764,9 @@ int sx1272_sendFrame(uint8_t *data, int length)
 	sx_setOpMode(LORA_STANDBY_MODE);
 
 	//todo: check fifo is empty, no rx data..
+
+	/* adjust coding rate */
+	sx1272_setCodingRate(cr);
 
 	/* upload frame */
 	sx_writeFifo(0x00, data, length);

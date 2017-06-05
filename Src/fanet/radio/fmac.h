@@ -14,13 +14,34 @@
 #include <math.h>
 
 /*
+ * Hard coded tx time assumption:
+ * -SR7
+ * -BW250
+ * -CR8 (worst case)
+ *
+ * payload (byte) -> airtime (ms) -> airtime per byte payload (ms)
+ * 0		9.43		0
+ * 1		13.44		4.1
+ * 2-5		17.54		>1.63
+ * 10		25.73		1.63
+ * 64		87.17		1.2
+ * 201		246.91		1.18
+ * (number accrording to LoRa calculator)
+ *
+ * -> tx time assumption:
+ * 15ms + 2*payload(bytes)
+ * MAC_TX_MINHEADERTIME_MS + (blength * MAC_TX_TIMEPERBYTE_MS
+ */
+
+/*
  * Timing defines
  * ONLY change if you know what you are doing. Can destroy the hole nearby network!
  */
 
 #define MAC_SLOT_MS				20
 
-#define MAC_TX_MINTIME				50
+#define MAC_TX_MINPREAMBLEHEADERTIME_MS		15
+#define MAC_TX_TIMEPERBYTE_MS			2
 #define MAC_TX_ACKTIMEOUT			1000
 #define MAC_TX_RETRANSMISSION_TIME		1000
 #define MAC_TX_RETRANSMISSION_RETRYS		3
@@ -77,8 +98,12 @@
 #define FRM_TYPE_LANDMARK			5
 
 /* Debug */
-//#define SerialDEBUG				Serial1
-#define MAC_debug_mode				2
+#define MAC_debug_mode				3
+#if !defined(DEBUG) && !defined(DEBUG_SEMIHOSTING) &&  MAC_debug_mode > 0
+	#undef MAC_debug_mode
+	#define MAC_debug_mode 0
+#endif
+
 
 //#include "main.h"
 #include "stm32l4xx.h"

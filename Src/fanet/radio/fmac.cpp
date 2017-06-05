@@ -417,7 +417,17 @@ void FanetMac::handle_tx()
 	}
 	else
 	{
-		/* get a from from the fifo */
+#if MAC_debug_mode >= 2
+		static int queue_length = 0;
+		int current_qlen = tx_fifo.size();
+		if(current_qlen != queue_length)
+		{
+			printf("### tx queue: %d\n", current_qlen);
+			queue_length = current_qlen;
+		}
+#endif
+
+		/* get a frame from the fifo */
 		frm = tx_fifo.get_nexttx();
 		if (frm == NULL)
 			return;
@@ -425,10 +435,8 @@ void FanetMac::handle_tx()
 		/* frame w/o a received ack and no more re-transmissions left */
 		if (frm->ack_requested && frm->num_tx <= 0)
 		{
-#if defined(SerialDEBUG) && MAC_debug_mode > 0
-			SerialDEBUG.print(F("### Frame, 0x"));
-			SerialDEBUG.print(frm->type, HEX);
-			SerialDEBUG.println(F(" NACK!"));
+#if MAC_debug_mode > 0
+			printf("### Frame, 0x%02X NACK!\n", frm->type);
 #endif
 			if (myApp != NULL)
 				myApp->handle_acked(false, frm->dest);
@@ -448,8 +456,8 @@ void FanetMac::handle_tx()
 	int blength = frm->serialize(buffer);
 	if (blength < 0)
 	{
-#if defined(SerialDEBUG) && MAC_debug_mode > 0
-		SerialDEBUG.println(F("### Problem serialization. removing."));
+#if MAC_debug_mode > 0
+		printf("### Problem serialization type 0x%02X. removing.\n", frm->type);
 #endif
 		/* problem while assembling the frame */
 		if (app_tx)
@@ -459,38 +467,31 @@ void FanetMac::handle_tx()
 		return;
 	}
 
-#if defined(SerialDEBUG) && MAC_debug_mode > 0
-	SerialDEBUG.print(F("### Sending, 0x"));
-	SerialDEBUG.print(frm->type, HEX);
-	SerialDEBUG.print(F("..."));
+#if MAC_debug_mode > 0
+	printf("### Sending, 0x%02X... ", frm->type);
 #endif
 
-#if defined(SerialDEBUG) && MAC_debug_mode > 1
+#if MAC_debug_mode >= 4
 	/* print hole packet */
-	SerialDEBUG.print(F(" "));
+	printf(" ");
 	for(int i=0; i<blength; i++)
 	{
-		SerialDEBUG.print(buffer[i], HEX);
+		printf("%02X", buffer[i]);
 		if(i<blength-1)
-		SerialDEBUG.print(F(":"));
+			printf(":");
 	}
-	SerialDEBUG.print(F(" "));
+	printf(" ");
 #endif
 
-	/* for only a few nodes around, increase the coding rate to ensure a more robust transmission */
-	if (neighbors.size() < MAC_CODING48_THRESHOLD)
-		sx1272_setCodingRate(CR_8);
-	else
-		sx1272_setCodingRate(CR_5);
-
 	/* channel free and transmit? */
-	int tx_ret = sx1272_sendFrame(buffer, blength);
+	//note: for only a few nodes around, increase the coding rate to ensure a more robust transmission
+	int tx_ret = sx1272_sendFrame(buffer, blength, neighbors.size() < MAC_CODING48_THRESHOLD ? CR_8 : CR_5);
 	delete[] buffer;
 
 	if (tx_ret == TX_OK)
 	{
-#if defined(SerialDEBUG) && MAC_debug_mode > 0
-		SerialDEBUG.println(F("done."));
+#if MAC_debug_mode > 0
+		printf("done.\n");
 #endif
 
 		if (app_tx)
@@ -519,14 +520,18 @@ void FanetMac::handle_tx()
 			}
 		}
 
-		/* ready for a new transmission */
+		/* ready for a new transmission in */
+//todo: add 1% duty cycle engine
 		csma_backoff_exp = MAC_TX_BACKOFF_EXP_MIN;
-		csma_next_tx = HAL_GetTick() + MAC_TX_MINTIME;
+		csma_next_tx = HAL_GetTick() + MAC_TX_MINPREAMBLEHEADERTIME_MS + (blength * MAC_TX_TIMEPERBYTE_MS);
 	}
-	else if (tx_ret == TX_RX_ONGOING)
+	else if (tx_ret == TX_RX_ONGOING || tx_ret == TX_TX_ONGOING)
 	{
-#if defined(SerialDEBUG) && MAC_debug_mode > 0
-		SerialDEBUG.println(F("rx, abort."));
+#if MAC_debug_mode > 0
+		if(tx_ret == TX_RX_ONGOING)
+			printf("rx, abort.\n");
+		else
+			printf("tx not done yet, abort.\n");
 #endif
 
 		if (app_tx)
@@ -539,17 +544,15 @@ void FanetMac::handle_tx()
 		/* next tx try */
 		csma_next_tx = HAL_GetTick() + random(1 << (MAC_TX_BACKOFF_EXP_MIN - 1), 1 << csma_backoff_exp);
 
-#if defined(SerialDEBUG) && MAC_debug_mode > 0
-		SerialDEBUG.print(F("### backoff ("));
-		SerialDEBUG.print(csma_next_tx - HAL_GetTick());
-		SerialDEBUG.println(F("ms)"));
+#if MAC_debug_mode > 1
+		printf("### backoff %lums\n", csma_next_tx - HAL_GetTick());
 #endif
 	}
 	else
 	{
 		/* ignoring TX_TX_ONGOING */
-#if defined(SerialDEBUG) && MAC_debug_mode > 0
-		SerialDEBUG.println(F("### wow."));
+#if MAC_debug_mode > 0
+		printf("WAT: %d\n", tx_ret);
 #endif
 
 		if (app_tx)
@@ -561,6 +564,5 @@ Frame::Frame()
 {
 	src = fmac.my_addr;
 }
-;
 
 FanetMac fmac = FanetMac();
