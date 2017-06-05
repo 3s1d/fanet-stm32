@@ -22,7 +22,7 @@
  * payload (byte) -> airtime (ms) -> airtime per byte payload (ms)
  * 0		9.43		0
  * 1		13.44		4.1
- * 2-5		17.54		>1.63
+ * 2-5		17.54		4-1.63
  * 10		25.73		1.63
  * 64		87.17		1.2
  * 201		246.91		1.18
@@ -30,7 +30,7 @@
  *
  * -> tx time assumption:
  * 15ms + 2*payload(bytes)
- * MAC_TX_MINHEADERTIME_MS + (blength * MAC_TX_TIMEPERBYTE_MS
+ * MAC_TX_MINHEADERTIME_MS + (blength * MAC_TX_TIMEPERBYTE_MS)
  */
 
 /*
