@@ -98,7 +98,7 @@
 #define FRM_TYPE_LANDMARK			5
 
 /* Debug */
-#define MAC_debug_mode				3
+#define MAC_debug_mode				0
 #if !defined(DEBUG) && !defined(DEBUG_SEMIHOSTING) &&  MAC_debug_mode > 0
 	#undef MAC_debug_mode
 	#define MAC_debug_mode 0
