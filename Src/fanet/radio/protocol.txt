@@ -128,7 +128,8 @@ bit 0-3		Subtype:
 			3	Area
 			4	Circle
 			5	Filled circle
-			6-15 TBD
+			6	Position (absolute)
+			6-14 TBD
 [Byte 1]
 bit 7-4		'Number of elements'-1=n (String in words n<=16 (max string -> 32byte), circles n<=6, others n<=8)
 bit 3-0		Layer:
@@ -142,7 +143,7 @@ bit 3-0		Layer:
 			Area (3): 					Position (4 Bytes compressed, see below, minimum 3 elements)
 			Circle (4):					Position (4 Bytes compressed, see below) + Radius (in: ('1Byte' + 1) * 25m)
 			Filled Circle (5):			Position (4 Bytes compressed, see below) + Radius (in: ('1Byte' + 1) * 25m)
-			Reference Coordinates (15):	Position (6 byte absolute, see below). Alternatively Type 4 position can be used.
+			Reference Coordinates (15):	Position (6 byte absolute, see below, once only). Alternatively Type 4 position can be used.
 
 ------------
 
