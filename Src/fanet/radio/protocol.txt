@@ -176,8 +176,9 @@ bit 0-23	Latitude
 bit 0-23	Longitude
 
 			Details:
-			Latitude = value*90/2^23
-			Longitude = value*180/2^23
+			Latitude = value_lat/93206	\in [-90, +90]
+			Longitude = value_lon/46603 \in [-180, +180]
+			(Note: 32bit floating point is required for direkt conversion)
 
 
 ------------

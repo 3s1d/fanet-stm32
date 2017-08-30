@@ -23,7 +23,7 @@
 #define	APP_TYPE1_MINTAU_MS			250
 #define	APP_TYPE1_TAU_MS			5000
 
-#define APP_TYPE1_SIZE				10
+#define APP_TYPE1_SIZE				12
 
 class App : public Fapp
 {
@@ -64,45 +64,46 @@ private:
 		buffer = new uint8_t[APP_TYPE1_SIZE];
 
 		/* position */
-		((uint16_t*)buffer)[0] = Frame::coord2payloadword(latitude);
-		((uint16_t*)buffer)[1] = Frame::coord2payloadword(longitude);
+		//((uint16_t*)buffer)[0] = Frame::coord2payload_compressed(latitude);
+		//((uint16_t*)buffer)[1] = Frame::coord2payload_compressed(longitude);
+		Frame::coord2payload_absolut(latitude, longitude, buffer);
 
 		/* altitude set the lower 12bit */
 		int alt = constrain(altitude, 0, 8190);
 		if(alt > 2047)
-			((uint16_t*)buffer)[2] = ((alt+2)/4) | (1<<11);				//set scale factor
+			((uint16_t*)buffer)[3] = ((alt+2)/4) | (1<<11);				//set scale factor
 		else
-			((uint16_t*)buffer)[2] = alt;
+			((uint16_t*)buffer)[3] = alt;
 		/* online tracking */
-		((uint16_t*)buffer)[2] |= !!do_online_tracking<<15;
+		((uint16_t*)buffer)[3] |= !!do_online_tracking<<15;
 		/* aircraft type */
-		((uint16_t*)buffer)[2] |= (aircraft_type&0x7)<<12;
+		((uint16_t*)buffer)[3] |= (aircraft_type&0x7)<<12;
 
 		/* Speed */
 		int speed2 = constrain((int)roundf(speed*2.0f), 0, 635);
 		if(speed2 > 127)
-			buffer[6] = ((speed2+2)/5) | (1<<7);					//set scale factor
+			buffer[8] = ((speed2+2)/5) | (1<<7);					//set scale factor
 		else
-			buffer[6] = speed2;
+			buffer[8] = speed2;
 
 		/* Climb */
 		int climb10 = constrain((int)roundf(climb*10.0f), -315, 315);
 		if(abs(climb10) > 63)
-			buffer[7] = ((climb10 + (climb10>=0?2:-2))/5) | (1<<7);			//set scale factor
+			buffer[9] = ((climb10 + (climb10>=0?2:-2))/5) | (1<<7);			//set scale factor
 		else
-			buffer[7] = climb10 & 0x7F;
+			buffer[9] = climb10 & 0x7F;
 
 		/* Heading */
-		buffer[8] = constrain((int)roundf(heading*256.0f)/360.0f, 0, 255);
+		buffer[10] = constrain((int)roundf(heading*256.0f)/360.0f, 0, 255);
 
 		/* Turn rate */
 		if(!isnan(turnrate))
 		{
 			int turnr4 = constrain((int)roundf(turnrate*4.0f), 0, 255);
 			if(abs(turnr4) > 63)
-				buffer[9] = ((turnr4 + (turnr4>=0?2:-2))/4) | (1<<7);			//set scale factor
+				buffer[11] = ((turnr4 + (turnr4>=0?2:-2))/4) | (1<<7);			//set scale factor
 			else
-				buffer[9] = turnr4 & 0x7f;
+				buffer[11] = turnr4 & 0x7f;
 			return APP_TYPE1_SIZE;
 		}
 		else

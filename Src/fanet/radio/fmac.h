@@ -148,7 +148,7 @@ class Frame
 {
 public:
 	/* general stuff */
-	static uint16_t coord2payloadword(float deg)
+	static uint16_t coord2payload_compressed(float deg)
 	{
 		float deg_round =  roundf(deg);
 		bool deg_odd = ((int)deg_round) & 1;
@@ -156,6 +156,20 @@ public:
 		const int dec_int = constrain((int)(decimal*32767), -16383, 16383);
 
 		return ((dec_int&0x7FFF) | (!!deg_odd<<15));
+	}
+
+	static void coord2payload_absolut(float lat, float lon, uint8_t *buf)
+	{
+		if(buf == NULL)
+			return;
+
+		int32_t lat_i = roundf(lat * 93206.0f);
+		int32_t lon_i = roundf(lon * 46603.0f);
+
+		*((int32_t*)buf) = lat_i;
+		buf[3] = ((uint8_t*)&lon_i)[0];
+		buf[4] = ((uint8_t*)&lon_i)[1];
+		buf[5] = ((uint8_t*)&lon_i)[2];
 	}
 
 	/* addresses */

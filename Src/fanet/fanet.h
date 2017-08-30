@@ -12,6 +12,8 @@
 extern "C" {
 #endif
 
+//#define FLARM
+
 #include "serial.h"
 
 void fanet_init(serial_t *serial);
