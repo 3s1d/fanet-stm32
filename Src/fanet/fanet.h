@@ -12,12 +12,14 @@
 extern "C" {
 #endif
 
-//#define FLARM
+#define FLARM
 
 #include "serial.h"
 
 void fanet_init(serial_t *serial);
 void fanet_loop(void);
+
+void fanet_pps_int(void);
 
 #ifdef __cplusplus
 }

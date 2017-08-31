@@ -16,6 +16,10 @@
 #include "radio/fmac.h"
 #include "wire/serial_interface.h"
 
+#ifdef FLARM
+#include "../flarm/caswrapper.h"
+#endif
+
 #define APP_VALID_STATE_MS			10000
 
 //todo... worst case coding...
@@ -64,8 +68,6 @@ private:
 		buffer = new uint8_t[APP_TYPE1_SIZE];
 
 		/* position */
-		//((uint16_t*)buffer)[0] = Frame::coord2payload_compressed(latitude);
-		//((uint16_t*)buffer)[1] = Frame::coord2payload_compressed(longitude);
 		Frame::coord2payload_absolut(latitude, longitude, buffer);
 
 		/* altitude set the lower 12bit */

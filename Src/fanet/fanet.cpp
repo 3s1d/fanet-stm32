@@ -16,7 +16,6 @@
 #include "../flarm/caswrapper.h"
 #endif
 
-
 void fanet_init(serial_t *serial)
 {
 	serial_int.begin(serial);
@@ -48,5 +47,12 @@ void fanet_loop(void)
 	/* FLARM */
 #ifdef FLARM
 	casw.handle();
+#endif
+}
+
+void fanet_pps_int(void)
+{
+#ifdef FLARM
+	casw.pps();
 #endif
 }

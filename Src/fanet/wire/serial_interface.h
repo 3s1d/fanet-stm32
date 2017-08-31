@@ -81,7 +81,8 @@
 
 /*
  * Normal Commands
- * State: 		#FNS lat(deg),lon(deg),alt(m),speed(km/h),climb(m/s),heading(deg)[,turn(deg/s)]		note: all values in float (NOT hex)
+ * State: 		#FNS lat(deg),lon(deg),alt(m),speed(km/h),climb(m/s),heading(deg)[,year(since 1900),month(0-11),day,hour,min,sec,turn(deg/s)]
+ * 					note: all values in float/int (NOT hex), time is required for FLARM
  * Address: 		#FNA manufacturer(hex),id(hex)
  * Config: 		#FNC type(0..7),onlinelogging(0..1)							note: type see protocol.txt
  * Transmit: 		#FNT type,dest_manufacturer,dest_id,forward,ack_required,length,length*2hex		note: all values in hex

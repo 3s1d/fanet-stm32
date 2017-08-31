@@ -19,13 +19,18 @@
 #ifdef FANET_BLUETOOTH
 	#include "bm78.h"
 #endif
+#ifdef FLARM
+	#include "../../flarm/caswrapper.h"
+#endif
 #include "serial_interface.h"
+
 
 
 /* Fanet Commands */
 
-/* State: #FNS lat(deg),lon(deg),alt(m),speed(km/h),climb(m/s),heading(deg)[,turn(deg/s)] */
-//note: all values in float (NOT hex)
+/* State: #FNS lat(deg),lon(deg),alt(m),speed(km/h),climb(m/s),heading(deg)[,year(since 1900),month(0-11),day,hour,min,sec,turn(deg/s)] */
+//note: all values in float/dec (NOT hex)
+//note: FLARM requires a precise time stamp
 void Serial_Interface::fanet_cmd_state(char *ch_str)
 {
 #if defined(SerialDEBUG) && (SERIAL_debug_mode > 0)
@@ -70,8 +75,30 @@ void Serial_Interface::fanet_cmd_state(char *ch_str)
 		return;
 	}
 	float heading = atof(++p);
-	p = strchr(p, SEPARATOR);
+
+	/* time stamp */
+	struct tm t = {0};
+	p = strchr(p, SEPARATOR);	//year
+	if(p)
+		t.tm_year = atoi(++p);
+	p = strchr(p, SEPARATOR);	//month
+	if(p)
+		t.tm_mon = atoi(++p);
+	p = strchr(p, SEPARATOR);	//day
+	if(p)
+		t.tm_mday = atoi(++p);
+	p = strchr(p, SEPARATOR);	//hour
+	if(p)
+		t.tm_hour = atoi(++p);
+	p = strchr(p, SEPARATOR);	//min
+	if(p)
+		t.tm_min = atoi(++p);
+	p = strchr(p, SEPARATOR);	//sec
+	if(p)
+		t.tm_sec = atoi(++p);
+
 	float turn = NAN;
+	p = strchr(p, SEPARATOR);
 	if(p)
 		turn = atof(++p);
 
@@ -82,6 +109,10 @@ void Serial_Interface::fanet_cmd_state(char *ch_str)
 		heading += 360.0f;
 
 	app.set(lat, lon, alt, speed, climb, heading, turn);
+
+#ifdef FLARM
+	casw.update_position(lat, lon, alt, speed, climb, heading, &t);
+#endif
 
 	/* The state is only of interest if a src addr is set */
 	if(fmac.my_addr == MacAddr())

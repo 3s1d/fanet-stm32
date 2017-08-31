@@ -61,7 +61,7 @@ bit 12-14	Aircraft Type
 			4: Glider
 			5: Powered Aircraft
 			6: Helicopter
-			7: Parachute	(maybe change to UAV?)
+			7: UAV
 bit 11		Altitude Scaling 1->4x, 0->1x
 bit 0-10	Altitude in m
 
