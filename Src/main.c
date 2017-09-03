@@ -154,7 +154,7 @@ int main(void)
 	/* Debug */
 #ifdef DEBUG_SEMIHOSTING
 	/* semihosting */
-	initialise_monitor_handles(); //todo
+	initialise_monitor_handles();
 #endif
 
 #if defined(DEBUG) || defined(DEBUG_SEMIHOSTING)

@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
-
 #include "main.h"
 #include "stm32l4xx.h"
 #include "stm32l4xx_hal_gpio.h"
@@ -10,10 +9,21 @@
 
 #include "../radio/sx1272.h"
 
+#ifdef SX1272_DO_FSK
+#include <math.h>
+#endif
+
+
 bool sx1272_armed = false;
 sx_region_t sx1272_region = {.channel = 0, .dBm = 0};
 irq_callback sx1272_irq_cb = NULL;
 SPI_HandleTypeDef *sx1272_spi = NULL;
+
+#ifdef SX1272_DO_FSK
+#define SX_REG_BACKUP_POR	0
+#define SX_REG_BACKUP_LORA	1
+uint8_t sx_reg_backup[2][111];
+#endif
 
 //1% too slow, for24Mhz
 void delay_us(const int us)
@@ -76,7 +86,7 @@ uint8_t sx_readRegister(uint8_t address)
 void sx_writeRegister(uint8_t address, uint8_t data)
 {
 	sx_select();
-	/* bit 7 set to read from registers */
+	/* bit 7 set to write registers */
 	address |= 0x80;
 
 	uint8_t tx[2] = {address, data};
@@ -90,6 +100,39 @@ void sx_writeRegister(uint8_t address, uint8_t data)
 	Serial.print(data, HEX);
 	Serial.println();
 #endif
+}
+
+uint8_t sx_readRegister_burst(uint8_t address, uint8_t *data, int length)
+{
+	if(sx1272_spi == NULL || data == NULL)
+		return 0;
+
+	sx_select();
+
+	/* bit 7 cleared to read in registers */
+	address &= 0x7F;
+
+	HAL_SPI_Transmit(sx1272_spi, &address, 1, 100);
+	HAL_StatusTypeDef ret = HAL_SPI_Receive(sx1272_spi, data, length, 100);
+	sx_unselect();
+
+	return (ret==HAL_OK)?length:0;
+}
+
+int sx_writeRegister_burst(uint8_t address, uint8_t *data, int length)
+{
+	if(sx1272_spi == NULL || data == NULL)
+		return 0;
+
+	sx_select();
+	/* bit 7 set to write registers */
+	address |= 0x80;
+
+	HAL_SPI_Transmit(sx1272_spi, &address, 1, 100);
+	HAL_StatusTypeDef ret = HAL_SPI_Transmit(sx1272_spi, data, length, 100);
+	sx_unselect();
+
+	return (ret==HAL_OK)?length:0;
 }
 
 bool sx_setOpMode(uint8_t mode)
@@ -134,6 +177,7 @@ bool sx_setOpMode(uint8_t mode)
 #endif
 	break;
 	case LORA_TX_MODE:
+	case GFSK_TX_MODE:
 #ifdef SXRX_Pin
 		HAL_GPIO_WritePin(SXRX_GPIO_Port, SXRX_Pin, GPIO_PIN_RESET);
 #endif
@@ -172,59 +216,22 @@ uint8_t sx_getOpMode(void)
 	return sx_readRegister(REG_OP_MODE);
 }
 
-void sx_writeFifo(uint8_t addr, uint8_t *data, int length)
+int sx_writeFifo(uint8_t addr, uint8_t *data, int length)
 {
-#if (SX1272_debug_mode > 1)
-	Serial.println();
-	Serial.print(F("## SX1272 write fifo, length="));
-	Serial.print(length, DEC);
-
-	Serial.print(" [");
-	for (int i = 0; i < length; i++)
-	{
-		Serial.print(data[i], HEX);
-		if(i < length-1)
-			Serial.print(", ");
-	}
-	Serial.println("]");
-#endif
-
 	/* select location */
 	sx_writeRegister(REG_FIFO_ADDR_PTR, addr);
 
-	/* upload data */
-	sx_select();
-	uint8_t reg = REG_FIFO | 0x80;
-	HAL_SPI_Transmit(sx1272_spi, &reg, 1, 100);
-	HAL_SPI_Transmit(sx1272_spi, data, length, 100);
-        sx_unselect();
+	/* write data */
+	return sx_writeRegister_burst(REG_FIFO, data, length);
 }
 
-void sx_readFifo(uint8_t addr, uint8_t *data, int length)
+int sx_readFifo(uint8_t addr, uint8_t *data, int length)
 {
 	/* select location */
 	sx_writeRegister(REG_FIFO_ADDR_PTR, addr);
 
-	/* upload data */
-	sx_select();
-	uint8_t reg = REG_FIFO & 0x7F;
-	HAL_SPI_Transmit(sx1272_spi, &reg, 1, 100);
-	HAL_SPI_Receive(sx1272_spi, data, length, 100);
-	sx_unselect();
-
-#if (SX1272_debug_mode > 1)
-	Serial.print(F("## SX1272 read fifo, length="));
-	Serial.print(length, DEC);
-
-	Serial.print(" [");
-	for (int i = 0; i < length; i++)
-	{
-		Serial.print(data[i], HEX);
-		if(i < length-1)
-			Serial.print(", ");
-	}
-	Serial.println("]");
-#endif
+	/* read data */
+	return sx_readRegister_burst(REG_FIFO, data, length);
 }
 
 void sx_setDio0Irq(int mode)
@@ -261,6 +268,11 @@ bool sx1272_init(SPI_HandleTypeDef *spi)
 	HAL_GPIO_WritePin(SXRESET_GPIO_Port, SXRESET_Pin, GPIO_PIN_RESET);
 	HAL_Delay(6);
 
+#ifdef SX1272_DO_FSK
+	/* get POR registers */
+	//note: required for FSK transition, storing is faster than performing a reset
+	sx_readRegister_burst(REG_BITRATE_MSB, sx_reg_backup[SX_REG_BACKUP_POR], sizeof(sx_reg_backup[SX_REG_BACKUP_POR]));
+#endif
 	/* set Lora mode, this is only possible during sleep -> do it twice */
 	sx_setOpMode(LORA_SLEEP_MODE);
 	sx_setOpMode(LORA_SLEEP_MODE);
@@ -629,17 +641,36 @@ bool sx1272_isArmed(void)
 //note: do not use hardware based interrupts here
 void sx1272_irq(void)
 {
-	#if (SX1272_debug_mode > 0)
-		Serial.print(F("## SX1272 irq: "));
-	#endif
+#if (SX1272_debug_mode > 1)
+		printf("## SX1272 irq: ");
+#endif
 
+	/* enter sleep mode */
+	//note: does not destroy MSB (LORA <-> FSK)
 	sx_setOpMode(LORA_STANDBY_MODE);
+
+#ifdef SX1272_DO_FSK
+	if(!(sx_getOpMode()&0x80))
+	{
+#if (SX1272_debug_mode > 1)
+		printf("FSK\n");
+#endif
+		/* FSK mode -> enter normal mode again */
+		//note: we currently only support TX on FSK
+		sx_setOpMode(GFSK_SLEEP_MODE);
+		sx_setOpMode(LORA_SLEEP_MODE);
+		sx_writeRegister_burst(REG_BITRATE_MSB, sx_reg_backup[SX_REG_BACKUP_LORA], sizeof(sx_reg_backup[SX_REG_BACKUP_LORA]));
+
+		/* switch irq behavior back and re-enter rx mode */
+		sx1272_receiveStart();
+		return;
+	}
+#endif
 
 	if(sx1272_irq_cb == NULL)
 	{
-#if (SX1272_debug_mode > 0)
-		Serial.println();
-		Serial.println(F("## No callback. Error"));
+#if (SX1272_debug_mode > 1)
+		printf("## No callback. Error\n");
 #endif
 
 		sx_writeRegister(REG_IRQ_FLAGS, 0xFF);
@@ -647,10 +678,8 @@ void sx1272_irq(void)
 	}
 
 	uint8_t what = sx_readRegister(REG_IRQ_FLAGS);
-#if (SX1272_debug_mode > 0)
-	Serial.print(what, HEX);
-	Serial.print("...");
-	//Serial.println(readRegister(REG_HOP_CHANNEL), HEX);
+#if (SX1272_debug_mode > 1)
+	printf("%02x\n", what);
 #endif
 	/* Tx done */
 	//if(what & IRQ_TX_DONE)
@@ -680,7 +709,7 @@ void sx1272_irq(void)
 void sx1272_setIrqReceiver(irq_callback cb)
 {
 	sx_setOpMode(LORA_STANDBY_MODE);
-	sx_setDio0Irq(DIO0_RX_DONE);
+	sx_setDio0Irq(DIO0_RX_DONE_LORA);
 
 	/* clear all flag */
 	sx_writeRegister(REG_IRQ_FLAGS, 0xFF);
@@ -718,14 +747,12 @@ int sx1272_getRssi(void)
 	return rssi;
 }
 
-/***********************************/
-int sx1272_sendFrame(uint8_t *data, int length, uint8_t cr)
+int sx1272_channel_free4tx(void)
 {
-#if (SX1272_debug_mode > 0)
-	Serial.print(F("## SX1272 send frame..."));
-#endif
-
-	uint8_t mode = sx_getOpMode() & LORA_MODE_MASK;
+	uint8_t mode = sx_getOpMode();
+	if(SX_IN_FSK_MODE(mode))
+		return TX_FSK_ONGOING;
+	mode &= LORA_MODE_MASK;
 
 	/* are we transmitting anyway? */
 	if(mode == LORA_TX_MODE)
@@ -761,6 +788,24 @@ int sx1272_sendFrame(uint8_t *data, int length, uint8_t cr)
 		return TX_RX_ONGOING;
 	}
 
+	return TX_OK;
+}
+
+/***********************************/
+int sx1272_sendFrame(uint8_t *data, int length, uint8_t cr)
+{
+#if (SX1272_debug_mode > 0)
+	Serial.print(F("## SX1272 send frame..."));
+#endif
+
+	/* channel accessible? */
+	int state = sx1272_channel_free4tx();
+	if(state != TX_OK)
+		return state;
+
+	/*
+	 * Prepare TX
+	 */
 	sx_setOpMode(LORA_STANDBY_MODE);
 
 	//todo: check fifo is empty, no rx data..
@@ -778,7 +823,7 @@ int sx1272_sendFrame(uint8_t *data, int length, uint8_t cr)
 	{
 		/* clear flag */
 		sx_writeRegister(REG_IRQ_FLAGS, IRQ_TX_DONE);
-		sx_setDio0Irq(DIO0_TX_DONE);
+		sx_setDio0Irq(DIO0_TX_DONE_LORA);
 	}
 
 	sx_setOpMode(LORA_TX_MODE);
@@ -861,7 +906,7 @@ bool sx1272_receiveStart(void)
 	sx_writeRegister(REG_IRQ_FLAGS, IRQ_RX_DONE);
 
 	/* switch irq behaviour to rx_done and enter rx cont mode */
-	sx_setDio0Irq(DIO0_RX_DONE);
+	sx_setDio0Irq(DIO0_RX_DONE_LORA);
 	return sx_setOpMode(LORA_RXCONT_MODE);
 }
 
@@ -878,3 +923,95 @@ int sx1272_getFrame(uint8_t *data, int max_length)
 	return min(received, max_length);
 }
 
+#ifdef SX1272_DO_FSK
+
+/*
+ *
+ * FSK extension
+ *
+ */
+
+//note: this method is highly optimized to switch between GFSK and LORA
+int sx1272_sendFrame_FSK(sx_fsk_conf_t *conf, uint8_t *data, int num_data)
+{
+	if(conf == NULL || conf->num_syncword<=0)
+		return TX_ERROR;
+
+	/* channel accessible? */
+	int state = sx1272_channel_free4tx();
+	if(state != TX_OK)
+		return state;
+
+	/*
+	 * Store register content, switch to FSK, and prepare TX
+	 */
+	sx_setOpMode(LORA_SLEEP_MODE);
+	sx_readRegister_burst(REG_BITRATE_MSB, sx_reg_backup[SX_REG_BACKUP_LORA], sizeof(sx_reg_backup[SX_REG_BACKUP_LORA]));
+	sx_setOpMode(GFSK_SLEEP_MODE);
+	sx_writeRegister_burst(REG_BITRATE_MSB, sx_reg_backup[SX_REG_BACKUP_POR], sizeof(sx_reg_backup[SX_REG_BACKUP_POR]));
+
+	/* bitrate 100kbps -> 320 */
+	sx_writeRegister(REG_BITRATE_MSB, 0x01);
+	sx_writeRegister(REG_BITRATE_LSB, 0x40);
+
+	/* freq */
+	int frf = roundf(((float)conf->frep) * 1638.4f);
+	sx_writeRegister(REG_FRF_MSB, (frf>>16) & 0xFF);
+	sx_writeRegister(REG_FRF_MID, (frf>>8) & 0xFF);
+	sx_writeRegister(REG_FRF_LSB, frf & 0xFF);
+
+	/* fdev 50khz -> 819.2(0x333), 100kHz -> 1638.4(0x666) */
+	sx_writeRegister(REG_FDEV_MSB, 0x03);
+	sx_writeRegister(REG_FDEV_LSB, 0x33);
+
+	/* PA output pin to PA_BOOST, power to default value */
+	sx_writeRegister(REG_PA_CONFIG, 0x80 |  max(0, sx1272_region.dBm - 2));
+
+	/* disable LowPnTxPllOff -> low phase noise PLL in transmit mode, however more current */
+	sx_writeRegister(REG_PA_RAMP, 0x09);
+	/* disable over current detection */
+	sx_writeRegister(REG_OCP, 0x1B);
+
+	/* set num_syncword, preamble polarity to 0x55 */
+	sx_writeRegister(REG_SYNC_CONFIG, 0x30 | ((conf->num_syncword-1) & 0x07));
+
+	/* set syncword */
+	for(int i=0; i<min(8,conf->num_syncword); i++)
+		sx_writeRegister(REG_SYNC_VALUE1 + i, conf->syncword[i]);
+
+	/* manchester coding, no CRC */
+	sx_writeRegister(REG_PACKET_CONFIG1, 0x20);
+
+	/* packet mode */
+	sx_writeRegister(REG_PACKET_CONFIG2, 0x40);
+
+	/* upload data */
+	sx_writeRegister(REG_PAYLOAD_LENGTH_FSK, num_data&0xFF);	//we silently assume max 64bytes as data due to hardware fifo limits
+	sx_writeRegister_burst(REG_FIFO, data, num_data);
+
+	/* prepare irq */
+	if(sx1272_irq_cb)
+		sx_setDio0Irq(DIO0_PACKET_SENT_FSK);
+	else
+		sx_setDio0Irq(DIO0_NONE_FSK);
+
+	/* start TX */
+	sx_setOpMode(GFSK_TX_MODE);
+
+	/* bypass waiting */
+	if(sx1272_irq_cb)
+		return TX_OK;
+
+	/* wait for completion */
+	for(int i=0; i<100 && (sx_getOpMode()&0x07) == 0x03; i++)
+		HAL_Delay(2);
+
+	/* reestablish state */
+	sx_setOpMode(GFSK_SLEEP_MODE);
+	sx_setOpMode(LORA_SLEEP_MODE);
+	sx_writeRegister_burst(REG_BITRATE_MSB, sx_reg_backup[SX_REG_BACKUP_LORA], sizeof(sx_reg_backup[SX_REG_BACKUP_LORA]));
+
+	return TX_OK;
+}
+
+#endif
