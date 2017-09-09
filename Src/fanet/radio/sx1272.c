@@ -642,7 +642,7 @@ bool sx1272_isArmed(void)
 void sx1272_irq(void)
 {
 #if (SX1272_debug_mode > 1)
-		printf("## SX1272 irq: ");
+		printf("## SX1272 irq: \n");
 #endif
 
 	/* enter sleep mode */
@@ -775,6 +775,7 @@ int sx1272_channel_free4tx(void)
 	sx_setOpMode(LORA_CAD_MODE);
 
 	/* wait for CAD completion */
+//TODO: it may enter a life lock here...
 	uint8_t iflags;
 	while(((iflags=sx_readRegister(REG_IRQ_FLAGS)) & IRQ_CAD_DONE) == 0)
 		delay_us(1);
@@ -923,6 +924,32 @@ int sx1272_getFrame(uint8_t *data, int max_length)
 	return min(received, max_length);
 }
 
+float sx_expectedAirTime_ms(void)
+{
+#ifdef SX1272_DO_FSK
+	uint8_t mode = sx_getOpMode();
+	if(SX_IN_FSK_MODE(mode))
+	{
+		/* FSK */
+		//note: fixed length, no address, ignoring CRC (as it's done in software here)
+		int nbytes = ((sx_readRegister(REG_PREAMBLE_MSB_FSK) << 8) | sx_readRegister(REG_PREAMBLE_LSB_FSK)) +	//preamble
+				(sx_readRegister(REG_SYNC_CONFIG)&SYNCSIZE_MASK_FSK) + 1 +				//syncword
+				sx_readRegister(REG_PAYLOAD_LENGTH_FSK) * (sx_readRegister(REG_PACKET_CONFIG1)&0x20?2:1);//payload, assuming <256
+		int bitrate = (sx_readRegister(REG_BITRATE_MSB)<<8) | sx_readRegister(REG_BITRATE_LSB);
+		if(bitrate <= 0)
+			bitrate = 100;
+		bitrate = 32e6 / bitrate;
+
+		float air_time = (8.0f * nbytes) / bitrate * 1e3;
+		return air_time;
+
+	}
+#endif
+	/* LORA */
+
+	return 0;
+}
+
 #ifdef SX1272_DO_FSK
 
 /*
@@ -947,8 +974,8 @@ int sx1272_sendFrame_FSK(sx_fsk_conf_t *conf, uint8_t *data, int num_data)
 	 */
 	sx_setOpMode(LORA_SLEEP_MODE);
 	sx_readRegister_burst(REG_BITRATE_MSB, sx_reg_backup[SX_REG_BACKUP_LORA], sizeof(sx_reg_backup[SX_REG_BACKUP_LORA]));
-	sx_setOpMode(GFSK_SLEEP_MODE);
 	sx_writeRegister_burst(REG_BITRATE_MSB, sx_reg_backup[SX_REG_BACKUP_POR], sizeof(sx_reg_backup[SX_REG_BACKUP_POR]));
+	sx_setOpMode(GFSK_SLEEP_MODE);
 
 	/* bitrate 100kbps -> 320 */
 	sx_writeRegister(REG_BITRATE_MSB, 0x01);
@@ -973,11 +1000,10 @@ int sx1272_sendFrame_FSK(sx_fsk_conf_t *conf, uint8_t *data, int num_data)
 	sx_writeRegister(REG_OCP, 0x1B);
 
 	/* set num_syncword, preamble polarity to 0x55 */
-	sx_writeRegister(REG_SYNC_CONFIG, 0x30 | ((conf->num_syncword-1) & 0x07));
+	sx_writeRegister(REG_SYNC_CONFIG, PREMBLEPOLARITY_FSK | SYNCON_FSK | ((conf->num_syncword-1) & SYNCSIZE_MASK_FSK));
 
 	/* set syncword */
-	for(int i=0; i<min(8,conf->num_syncword); i++)
-		sx_writeRegister(REG_SYNC_VALUE1 + i, conf->syncword[i]);
+	sx_writeRegister_burst(REG_SYNC_VALUE1, conf->syncword, min(8,conf->num_syncword));
 
 	/* manchester coding, no CRC */
 	sx_writeRegister(REG_PACKET_CONFIG1, 0x20);
@@ -996,13 +1022,15 @@ int sx1272_sendFrame_FSK(sx_fsk_conf_t *conf, uint8_t *data, int num_data)
 		sx_setDio0Irq(DIO0_NONE_FSK);
 
 	/* start TX */
-	sx_setOpMode(GFSK_TX_MODE);
+	//note: seq: tx on start, fromtransmit -> lowpower, lowpower = seq_off (w/ init mode), start
+	sx_writeRegister(REG_SEQ_CONFIG1, 0x80 | 0x10);
 
 	/* bypass waiting */
 	if(sx1272_irq_cb)
 		return TX_OK;
 
 	/* wait for completion */
+	HAL_Delay(2);
 	for(int i=0; i<100 && (sx_getOpMode()&0x07) == 0x03; i++)
 		HAL_Delay(2);
 

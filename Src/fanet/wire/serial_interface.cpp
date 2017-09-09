@@ -7,7 +7,7 @@
 
 #include <stdio.h>
 #include <string>
-
+#include <time.h>
 
 #include "jump.h"
 #include "serial.h"
@@ -112,7 +112,13 @@ void Serial_Interface::fanet_cmd_state(char *ch_str)
 
 #ifdef FLARM
 	casw.update_position(lat, lon, alt, speed, climb, heading, &t);
+#else
+	if(t.tm_sec)
+	{
+		//use t to prevent compiler error...
+	}
 #endif
+
 
 	/* The state is only of interest if a src addr is set */
 	if(fmac.my_addr == MacAddr())

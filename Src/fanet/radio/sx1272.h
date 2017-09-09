@@ -83,6 +83,9 @@ extern "C" {
 #define REG_FIFO_RX_BYTE_ADDR 				0x25
 #define REG_PREAMBLE_LSB_FSK 				0x26
 #define REG_SYNC_CONFIG	  				0x27
+#define		SYNCSIZE_MASK_FSK			0x07
+#define		PREMBLEPOLARITY_FSK			0x20
+#define		SYNCON_FSK				0x10
 #define REG_SYNC_VALUE1	 				0x28
 #define REG_SYNC_VALUE2	  				0x29
 #define REG_SYNC_VALUE3	  				0x2A
@@ -140,6 +143,7 @@ extern "C" {
 
 //GFSK MODES:
 #define GFSK_SLEEP_MODE					0x10
+#define GFSK_FSTX_MODE					0x12
 #define GFSK_TX_MODE					0x13
 
 //LORA BANDWIDTH:
