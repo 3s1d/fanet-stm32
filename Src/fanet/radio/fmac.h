@@ -26,7 +26,7 @@
  * 10		25.73		1.63
  * 64		87.17		1.2
  * 201		246.91		1.18
- * (number accrording to LoRa calculator)
+ * (number according to LoRa calculator)
  *
  * -> tx time assumption:
  * 15ms + 2*payload(bytes)
@@ -55,15 +55,16 @@
 
 #define NEIGHBOR_MAX_TIMEOUT_MS			240000		//4min
 
+#define MAC_SYNCWORD				0xF1
 
 /*
  * Number defines
  */
 #define MAC_NEIGHBOR_SIZE			64
-#define MAC_MAXNEIGHBORS_4_TRACKING_2HOP	8
+#define MAC_MAXNEIGHBORS_4_TRACKING_2HOP	5
 #define MAC_CODING48_THRESHOLD			10
 
-#define MAC_FIFO_SIZE				16
+#define MAC_FIFO_SIZE				8
 #define MAC_FRAME_LENGTH			254
 
 /*

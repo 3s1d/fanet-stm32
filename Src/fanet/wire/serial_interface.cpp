@@ -111,7 +111,8 @@ void Serial_Interface::fanet_cmd_state(char *ch_str)
 	app.set(lat, lon, alt, speed, climb, heading, turn);
 
 #ifdef FLARM
-	casw.update_position(lat, lon, alt, speed, climb, heading, &t);
+	if(t.tm_year >= 117)
+		casw.update_position(lat, lon, alt, speed, climb, heading, &t);
 #else
 	if(t.tm_sec)
 	{
@@ -495,6 +496,39 @@ void Serial_Interface::bt_eval(String &str)
 
 #endif
 
+/*
+ * FLARM
+ */
+#ifdef FLARM
+
+void Serial_Interface::flarm_cmd_expires(char *ch_str)
+{
+	if(myserial == NULL)
+		return;
+
+	const struct tm *t = casw.get_expirationDate();
+	if(t == NULL)
+		return;
+
+	char buf[64];
+	snprintf(buf, sizeof(buf), "%s%c %d/%d/%d\n", FLARM_CMD_START, CMD_EXPIRES, t->tm_year, t->tm_mon, t->tm_mday);
+	print(buf);
+}
+
+/* mux string */
+void Serial_Interface::flarm_eval(char *str)
+{
+	switch(str[strlen(FLARM_CMD_START)])
+	{
+	case CMD_EXPIRES:
+		flarm_cmd_expires(&str[strlen(FLARM_CMD_START) + 1]);
+		break;
+	default:
+		print_line(FA_REPLYE_UNKNOWN_CMD);
+	}
+}
+#endif
+
 /* collect string */
 void Serial_Interface::handle_rx(void)
 {
@@ -519,6 +553,10 @@ void Serial_Interface::handle_rx(void)
 #endif
 		else if(!strncmp(line, DONGLE_CMD_START, 3))
 			dongle_eval(line);
+#ifdef FLARM
+		else if(!strncmp(line, FLARM_CMD_START, 3))
+			flarm_eval(line);
+#endif
 		else
 			print_line(FN_REPLYE_UNKNOWN_CMD);
 

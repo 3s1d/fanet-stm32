@@ -22,8 +22,7 @@
 
 #define APP_VALID_STATE_MS			10000
 
-//todo... worst case coding...
-#define APP_TYPE1_AIRTIME_MS			40		//actually 20-25ms
+#define APP_TYPE1_AIRTIME_MS			40		//actually 20-30ms
 #define	APP_TYPE1_MINTAU_MS			250
 #define	APP_TYPE1_TAU_MS			5000
 

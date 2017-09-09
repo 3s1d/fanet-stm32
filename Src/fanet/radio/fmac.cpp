@@ -209,6 +209,7 @@ bool FanetMac::begin(Fapp &app)
 	sx1272_setSpreadingFactor(SF_7);
 	sx1272_setCodingRate(CR_5);
 	sx1272_setExplicitHeader(true);
+	sx1272_setSyncWord(MAC_SYNCWORD);
 	sx1272_setPayloadCrc(true);
 	sx1272_setLnaGain(LNAGAIN_G1_MAX, true);
 	sx1272_setIrqReceiver(frame_rx_wrapper);
@@ -216,7 +217,7 @@ bool FanetMac::begin(Fapp &app)
 	/* region specific. default is EU */
 	sx_region_t region;
 	region.channel = CH_868_200;
-	region.dBm = 14;
+	region.dBm = 10;			//+4dB antenna gain (skytraxx/lynx) -> max allowed output (14dBm)
 	sx1272_setRegion(region);
 
 	/* enter sleep mode */
@@ -232,6 +233,7 @@ bool FanetMac::begin(Fapp &app)
 }
 
 /* wrapper to fit callback into c++ */
+#include "../wire/serial_interface.h"
 void FanetMac::state_wrapper()
 {
 	/* only handle stuff during none-sleep mode */
@@ -240,6 +242,15 @@ void FanetMac::state_wrapper()
 
 	fmac.handle_rx();
 	fmac.handle_tx();
+
+	static int i=0;
+	if(++i>10)
+	{
+		char buf[64];
+		sprintf(buf, "dc %.6f\n", sx1272_get_dutycyle());
+		serial_int.print(buf);
+		i=0;
+	}
 }
 
 bool FanetMac::isNeighbor(MacAddr addr)
@@ -365,7 +376,7 @@ void FanetMac::handle_rx()
 
 		/* Forward frame */
 		if (frm->forward && tx_fifo.size() < MAC_FIFO_SIZE - 3 && frm->rssi <= MAC_FORWARD_MAX_RSSI_DBM
-				&& (frm->dest == MacAddr() || isNeighbor(frm->dest)))
+				&& (frm->dest == MacAddr() || isNeighbor(frm->dest)) && sx1272_get_dutycyle() < 0.095f)
 		{
 #if defined(SerialDEBUG) && MAC_debug_mode > 0
 			SerialDEBUG.println(F("### adding new forward frame"));
@@ -415,7 +426,7 @@ void FanetMac::handle_tx()
 
 		app_tx = true;
 	}
-	else
+	else if(sx1272_get_dutycyle() < 0.095f)
 	{
 #if MAC_debug_mode >= 2
 		static int queue_length = 0;
@@ -449,6 +460,10 @@ void FanetMac::handle_tx()
 			frm->forward = true;
 
 		app_tx = false;
+	}
+	else
+	{
+		return;
 	}
 
 	/* serialize frame */
@@ -521,7 +536,6 @@ void FanetMac::handle_tx()
 		}
 
 		/* ready for a new transmission in */
-//todo: add 1% duty cycle engine
 		csma_backoff_exp = MAC_TX_BACKOFF_EXP_MIN;
 		csma_next_tx = HAL_GetTick() + MAC_TX_MINPREAMBLEHEADERTIME_MS + (blength * MAC_TX_TIMEPERBYTE_MS);
 	}

@@ -18,6 +18,9 @@
 #define FANET_CMD_START			"#FN"
 #define BT_CMD_START			"#BT"
 #define DONGLE_CMD_START		"#DG"
+#ifdef FLARM
+#define FLARM_CMD_START			"#FA"
+#endif
 #define SEPARATOR			','
 
 
@@ -38,12 +41,19 @@
 #define DONGLE_CMD_MSG			DONGLE_CMD_START "R MSG"
 #define DONGLE_CMD_ERROR		DONGLE_CMD_START "R ERR"
 
+/* FLARM Replies */
+#ifdef FLARM
+#define FLARM_CMD_ERROR			FLARM_CMD_START "R ERR"
+#endif
+
 /* Commands */
 /* FANET */
 #define CMD_STATE			'S'
 #define CMD_TRANSMIT			'T'
 #define CMD_ADDR			'A'
 #define CMD_CONFIG			'C'
+
+#define CMD_RX_FRAME			"F"
 
 #define CMD_NAME			'N'		//bluetooth only
 
@@ -53,7 +63,11 @@
 #define CMD_REGION			'L'
 #define CMD_BOOTLOADER			'J'
 
-#define CMD_RX_FRAME			"F"
+/* FLARM */
+#ifdef FLARM
+#define CMD_EXPIRES			'X'
+#endif
+
 
 #define SERIAL_debug_mode		0
 
@@ -78,28 +92,37 @@
 #define DN_REPLYE_POWER			DONGLE_CMD_ERROR,70, "power switch failed"
 #define DN_REPLYE_TOOLESSPARAMETER	DONGLE_CMD_ERROR,80, "too less parameter"
 #define DN_REPLYE_UNKNOWNPARAMETER	DONGLE_CMD_ERROR,81, "unknown parameter"
-
+#ifdef FLARM
+#define FA_REPLYE_UNKNOWN_CMD		FLARM_CMD_ERROR, 90, "unknown FLARM command"
+#define FA_REPLYE_EXPIRED		FLARM_CMD_ERROR, 91, "FLARM expired"
+#endif
 /*
  * Normal Commands
  * State: 		#FNS lat(deg),lon(deg),alt(m),speed(km/h),climb(m/s),heading(deg)[,year(since 1900),month(0-11),day,hour,min,sec,turn(deg/s)]
- * 					note: all values in float/int (NOT hex), time is required for FLARM
+ * 					note: all values in float/int (NOT hex), time is required for FLARM in struct tm format
+ * Transmit: 		#FNT type,dest_manufacturer,dest_id,forward,ack_required,length,length*2hex		note: all values in hex
+ *
  * Address: 		#FNA manufacturer(hex),id(hex)
  * Config: 		#FNC type(0..7),onlinelogging(0..1)							note: type see protocol.txt
- * Transmit: 		#FNT type,dest_manufacturer,dest_id,forward,ack_required,length,length*2hex		note: all values in hex
+ *
  *
  * Receive a Frame:	#FNF src_manufacturer,src_id,broadcast,signature,type,payloadlength,payload
  *
- * Maintenance
+ * Maintenance/Dongle
  * Version:		#DGV
  * Standby:		#DGP powermode(0..1)									note: w/o status is returned
- * Region:		#DGL freq(868,915),power(2..20 (dBm))
-//todo: txpower, channel
-//todo
+ * Region:		#DGL freq(868,915),power(2..20 (dBm))							note: 10dBm is sufficient for
+ * 															Skytraxx modules using the
+ * 															stock antenna
+ *
  * Jump to DFU:		#DGJ BLstm										stm32 default bootloader
- * 			#DGJ BLxld										xload
+ * 			#DGJ BLxld										xloader
  * 														recommended: use 2 GPIOs connected
- //
- * 														to RESEST and BOOT0
+ * 															to RESEST and BOOT0
+ *
+ * FLARM
+ * Expiration Data:	#FAX				-> #FAX year/month/day	in struct tm format
+ *
  *
  * Bluetooth Commands
  * Name:		#BTN name
@@ -133,6 +156,12 @@ private:
 	void bt_cmd_name(char *ch_str);
 #endif
 
+	/* FLARM Commands */
+#ifdef FLARM
+	void flarm_eval(char *str);
+	void flarm_cmd_expires(char *ch_str);
+#endif
+
 public:
 	Serial_Interface() {};
 	void begin(serial_t *serial);
@@ -146,6 +175,8 @@ public:
 
 	uint32_t get_lastactivity(void) { return last_activity; };
 	bool any_actitity(void) { return (last_activity!=0); };
+
+	void flarm_expired(void){ print_line(FA_REPLYE_EXPIRED); };
 
 	void print_line(const char *type, int key, const char *msg);
 	void print(char *str);

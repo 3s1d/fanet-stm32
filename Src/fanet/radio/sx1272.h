@@ -11,13 +11,11 @@ extern "C" {
 #include "stm32l4xx.h"
 #include "stm32l4xx_hal_spi.h"
 
-#define SX1272_debug_mode 				0
 #define SX1272_DO_FSK
+#define SX1272_AIRTIME_AVG_INTERVALL			5000
 
-//! MACROS //
-//#define bitRead(value, bit) (((value) >> (bit)) & 0x01)  // read a bit
-//#define bitSet(value, bit) ((value) |= (1UL << (bit)))    // set bit to '1'
-//#define bitClear(value, bit) ((value) &= ~(1UL << (bit))) // set bit to '0'
+#define SX1272_debug_mode 				0
+
 
 //! REGISTERS //
 
@@ -105,6 +103,7 @@ extern "C" {
 #define REG_SEQ_CONFIG2	  				0x37
 #define REG_DETECTION_THRESHOLD      			0x37
 #define REG_TIMER_RESOL	  				0x38
+#define REG_SYNCWORD_LORA				0x39
 #define REG_TIMER1_COEF	  				0x39
 #define REG_TIMER2_COEF	  				0x3A
 #define REG_IMAGE_CAL	  				0x3B
@@ -262,12 +261,16 @@ void sx1272_clrIrqReceiver(void);
 
 bool sx1272_setRegion(sx_region_t region);
 
+void sx1272_setSyncWord(uint8_t sw);
+
 int sx1272_getRssi(void);
 
 int sx1272_sendFrame(uint8_t *data, int length, uint8_t cr);
 int sx1272_receiveFrame(uint8_t *data, int max_length);
 bool sx1272_receiveStart(void);
 int sx1272_getFrame(uint8_t *data, int max_length);
+
+float sx1272_get_dutycyle(void);
 
 /* FSK extension */
 #ifdef SX1272_DO_FSK

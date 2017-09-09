@@ -1,4 +1,12 @@
+--== PHY ==--
 
+868.2Mhz
+Syncword 0xF1
+250kHz Bandwidth
+Spreading Factor 7
+ExplicitHeader: Coding Rate CR 5-8/8 (depending on #neighbors), CRC for Payload 
+
+--== FANET MAC ==--
 
 
 Header:

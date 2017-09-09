@@ -18,6 +18,8 @@ bool sx1272_armed = false;
 sx_region_t sx1272_region = {.channel = 0, .dBm = 0};
 irq_callback sx1272_irq_cb = NULL;
 SPI_HandleTypeDef *sx1272_spi = NULL;
+uint32_t sx1272_last_tx_ticks = 0;
+float sx_dutycycle = 0.0f;
 
 #ifdef SX1272_DO_FSK
 #define SX_REG_BACKUP_POR	0
@@ -240,6 +242,72 @@ void sx_setDio0Irq(int mode)
 	sx_writeRegister(REG_DIO_MAPPING1, map1 | mode);
 }
 
+float sx_expectedAirTime_ms(void)
+{
+#ifdef SX1272_DO_FSK
+	uint8_t mode = sx_getOpMode();
+	if(SX_IN_FSK_MODE(mode))
+	{
+		/* FSK */
+		//note: fixed length, no address, ignoring CRC (as it's done in software here)
+		int nbytes = ((sx_readRegister(REG_PREAMBLE_MSB_FSK) << 8) | sx_readRegister(REG_PREAMBLE_LSB_FSK)) +	//preamble
+				(sx_readRegister(REG_SYNC_CONFIG)&SYNCSIZE_MASK_FSK) + 1 +				//syncword
+				sx_readRegister(REG_PAYLOAD_LENGTH_FSK) * (sx_readRegister(REG_PACKET_CONFIG1)&0x20?2:1);//payload, assuming <256
+		int bitrate = (sx_readRegister(REG_BITRATE_MSB)<<8) | sx_readRegister(REG_BITRATE_LSB);
+		if(bitrate <= 0)
+			bitrate = 100;
+		bitrate = 32e6 / bitrate;
+
+		float air_time = (8.0f * nbytes) / bitrate * 1e3;
+		return air_time;
+
+	}
+#endif
+	/* LORA */
+        float bw = 0.0f;
+        uint8_t cfg1 = sx_readRegister(REG_MODEM_CONFIG1);
+        uint8_t bw_reg = cfg1 & 0xC0;
+        switch( bw_reg )
+        {
+        case 0:		// 125 kHz
+            bw = 125000.0f;
+            break;
+        case 0x40: 	// 250 kHz
+            bw = 250000.0f;
+            break;
+        case 0x80: 	// 500 kHz
+            bw = 500000.0f;
+            break;
+        }
+
+        // Symbol rate : time for one symbol (secs)
+        uint8_t sf_reg = sx_readRegister(REG_MODEM_CONFIG2)>>4;
+        //float sf = sf_reg<6 ? 6.0f : sf_reg;
+        float rs = bw / ( 1 << sf_reg );
+        float ts = 1 / rs;
+        // time of preamble
+        float tPreamble = ( sx_readRegister(REG_PREAMBLE_LSB_LORA) + 4.25f ) * ts;		//note: assuming preamble < 256
+        // Symbol length of payload and time
+        int pktlen = sx_readRegister(REG_PAYLOAD_LENGTH_LORA);					//note: assuming CRC on -> 16, fixed length
+        int coderate = (cfg1 >> 3) & 0x7;
+        float tmp = ceil( (8 * pktlen - 4 * sf_reg + 28 + 16 - 20) / (float)( 4 * ( sf_reg ) ) ) * ( coderate + 4 );
+        float nPayload = 8 + ( ( tmp > 0 ) ? tmp : 0 );
+        float tPayload = nPayload * ts;
+        // Time on air
+        float tOnAir = (tPreamble + tPayload) * 1000.0f;
+
+        return tOnAir;
+}
+
+void sx_update_dutycyle(void)
+{
+	float txt = sx_expectedAirTime_ms();
+	float freet = HAL_GetTick() - sx1272_last_tx_ticks;
+	sx1272_last_tx_ticks = HAL_GetTick();
+
+	float dc =  txt / (txt + freet);
+	sx_dutycycle = sx_dutycycle*0.95f + dc*0.05f;
+}
 
 /*
  * public
@@ -398,7 +466,7 @@ void sx1272_setSpreadingFactor(uint8_t spr)
 
 	sx_writeRegister(REG_MODEM_CONFIG2, config2);
 
-	/* Check if it is neccesary to set special settings for SF=6 */
+	/* Check if it is necessary to set special settings for SF=6 */
 	if (spr == SF_6)
 	{
 		// Mandatory headerOFF with SF = 6 (Implicit mode)
@@ -736,6 +804,11 @@ bool sx1272_setRegion(sx_region_t region)
 	return success;
 }
 
+void sx1272_setSyncWord(uint8_t sw)
+{
+	sx_writeRegister(REG_SYNCWORD_LORA, sw);
+}
+
 int sx1272_getRssi(void)
 {
 	/* get values */
@@ -827,6 +900,10 @@ int sx1272_sendFrame(uint8_t *data, int length, uint8_t cr)
 		sx_setDio0Irq(DIO0_TX_DONE_LORA);
 	}
 
+	/* update air time */
+	sx_update_dutycyle();
+
+	/* tx */
 	sx_setOpMode(LORA_TX_MODE);
 
 	/* bypass waiting */
@@ -924,30 +1001,16 @@ int sx1272_getFrame(uint8_t *data, int max_length)
 	return min(received, max_length);
 }
 
-float sx_expectedAirTime_ms(void)
+float sx1272_get_dutycyle(void)
 {
-#ifdef SX1272_DO_FSK
-	uint8_t mode = sx_getOpMode();
-	if(SX_IN_FSK_MODE(mode))
-	{
-		/* FSK */
-		//note: fixed length, no address, ignoring CRC (as it's done in software here)
-		int nbytes = ((sx_readRegister(REG_PREAMBLE_MSB_FSK) << 8) | sx_readRegister(REG_PREAMBLE_LSB_FSK)) +	//preamble
-				(sx_readRegister(REG_SYNC_CONFIG)&SYNCSIZE_MASK_FSK) + 1 +				//syncword
-				sx_readRegister(REG_PAYLOAD_LENGTH_FSK) * (sx_readRegister(REG_PACKET_CONFIG1)&0x20?2:1);//payload, assuming <256
-		int bitrate = (sx_readRegister(REG_BITRATE_MSB)<<8) | sx_readRegister(REG_BITRATE_LSB);
-		if(bitrate <= 0)
-			bitrate = 100;
-		bitrate = 32e6 / bitrate;
+	/* report current duty cycle in case we just transmitted */
+	uint32_t dt = HAL_GetTick() - sx1272_last_tx_ticks;
+	if(dt <= SX1272_AIRTIME_AVG_INTERVALL)
+		return sx_dutycycle;
 
-		float air_time = (8.0f * nbytes) / bitrate * 1e3;
-		return air_time;
+	float airtime = sx_dutycycle*SX1272_AIRTIME_AVG_INTERVALL / dt;
 
-	}
-#endif
-	/* LORA */
-
-	return 0;
+	return airtime;
 }
 
 #ifdef SX1272_DO_FSK
@@ -1020,6 +1083,9 @@ int sx1272_sendFrame_FSK(sx_fsk_conf_t *conf, uint8_t *data, int num_data)
 		sx_setDio0Irq(DIO0_PACKET_SENT_FSK);
 	else
 		sx_setDio0Irq(DIO0_NONE_FSK);
+
+	/* update air time */
+	sx_update_dutycyle();
 
 	/* start TX */
 	//note: seq: tx on start, fromtransmit -> lowpower, lowpower = seq_off (w/ init mode), start
