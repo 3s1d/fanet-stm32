@@ -139,6 +139,32 @@ void Serial_Interface::fanet_cmd_addr(char *ch_str)
 	SerialDEBUG.print(F("### Addr "));
 	SerialDEBUG.print(ch_str);
 #endif
+	/* remove \r\n and any spaces*/
+	char *ptr = strchr(ch_str, '\r');
+	if(ptr == NULL)
+		ptr = strchr(ch_str, '\n');
+	if(ptr != NULL)
+		*ptr = '\0';
+	while(*ch_str == ' ')
+		ch_str++;
+
+	if(strlen(ch_str) == 0)
+	{
+		/* report addr */
+		char buf[64];
+		snprintf(buf, sizeof(buf), "%s%c %02X,%04X\n", FANET_CMD_START, CMD_ADDR, fmac.my_addr.manufacturer, fmac.my_addr.id);
+		print(buf);
+		return;
+	}
+
+	if(strstr(ch_str, "ERASE!") != NULL && fmac.erase_addr())
+	{
+		/* erase config */
+		//must never be used by the end user
+		print_line(FN_REPLY_OK);
+		return;
+	}
+
 	/* address */
 	char *p = (char *)ch_str;
 	int manufacturer = strtol(p, NULL, 16);
@@ -149,11 +175,17 @@ void Serial_Interface::fanet_cmd_addr(char *ch_str)
 	{
 		print_line(FN_REPLYE_INVALID_ADDR);
 	}
+	else if(fmac.set_addr(MacAddr(manufacturer, id)))
+	{
+#ifdef FLARM
+		//note: for now we ignore the manufacturer
+		casw.set_address(id);
+#endif
+		print_line(FN_REPLY_OK);
+	}
 	else
 	{
-		fmac.my_addr.manufacturer = manufacturer;
-		fmac.my_addr.id = id;
-		print_line(FN_REPLY_OK);
+		print_line(FN_REPLYE_ADDR_GIVEN);
 	}
 }
 
@@ -315,6 +347,11 @@ void Serial_Interface::dongle_cmd_power(char *ch_str)
 		print(buf);
 		return;
 	}
+
+#ifdef FLARM
+	if(!atoi(ch_str))
+		casw.do_flarm = false;
+#endif
 
 	/* set status */
 	if(sx1272_setArmed(!!atoi(ch_str)))
@@ -501,6 +538,36 @@ void Serial_Interface::bt_eval(String &str)
  */
 #ifdef FLARM
 
+void Serial_Interface::flarm_cmd_power(char *ch_str)
+{
+	/* remove \r\n and any spaces*/
+	char *ptr = strchr(ch_str, '\r');
+	if(ptr == NULL)
+		ptr = strchr(ch_str, '\n');
+	if(ptr != NULL)
+		*ptr = '\0';
+	while(*ch_str == ' ')
+		ch_str++;
+
+	if(strlen(ch_str) == 0)
+	{
+		/* report armed state */
+		char buf[64];
+		snprintf(buf, sizeof(buf), "%s%c %d\n", FLARM_CMD_START, CMD_POWER, casw.do_flarm);
+		print(buf);
+		return;
+	}
+
+
+	/* enable rf backend if not yet powered up already */
+	if(!!atoi(ch_str) && !sx1272_isArmed())
+		sx1272_setArmed(true);
+
+	/* set status */
+	casw.do_flarm = !!atoi(ch_str);
+	print_line(FA_REPLY_OK);
+}
+
 void Serial_Interface::flarm_cmd_expires(char *ch_str)
 {
 	if(myserial == NULL)
@@ -522,6 +589,9 @@ void Serial_Interface::flarm_eval(char *str)
 	{
 	case CMD_EXPIRES:
 		flarm_cmd_expires(&str[strlen(FLARM_CMD_START) + 1]);
+		break;
+	case CMD_POWER:
+		flarm_cmd_power(&str[strlen(FLARM_CMD_START) + 1]);
 		break;
 	default:
 		print_line(FA_REPLYE_UNKNOWN_CMD);

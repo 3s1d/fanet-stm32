@@ -98,6 +98,12 @@
 #define FRM_TYPE_SERVICE			4
 #define FRM_TYPE_LANDMARK			5
 
+#define MAC_FLASH_PAGESIZE			2048
+#define MAC_ADDR_PAGE				((((uint16_t)(READ_REG(*((uint32_t *)FLASHSIZE_BASE)))) * 1024)/MAC_FLASH_PAGESIZE - 1)
+#define MAC_ADDR_BASE				(FLASH_BASE + MAC_ADDR_PAGE*MAC_FLASH_PAGESIZE)
+#define MAC_ADDR_MAGIC				0x1337000000000000ULL
+#define MAC_ADDR_MAGIC_MASK			0xFFFF000000000000ULL
+
 /* Debug */
 #define MAC_debug_mode				0
 #if !defined(DEBUG) && !defined(DEBUG_SEMIHOSTING) &&  MAC_debug_mode > 0
@@ -369,6 +375,7 @@ private:
 	MacFifo rx_fifo;
 	LinkedList<NeighborNode *> neighbors;
 	Fapp *myApp = NULL;
+	MacAddr _my_addr;
 
 	unsigned long csma_next_tx = 0;
 	int csma_backoff_exp = MAC_TX_BACKOFF_EXP_MIN;
@@ -387,8 +394,9 @@ private:
 	void handle_rx();
 
 	bool isNeighbor(MacAddr addr);
+
+	MacAddr read_addr();
 public:
-	MacAddr my_addr;
 
 	FanetMac();
 	~FanetMac(){};
@@ -397,6 +405,11 @@ public:
 	bool begin(Fapp &app);
 
 	int transmit(Frame *frm) { return tx_fifo.add(frm); };
+
+	/* Addr */
+	const MacAddr &my_addr;		//ready only
+	bool set_addr(MacAddr addr);
+	bool erase_addr(void);
 };
 
 extern FanetMac fmac;

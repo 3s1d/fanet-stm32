@@ -193,7 +193,7 @@ void FanetMac::frame_rx_wrapper(int length)
 	fmac.frame_received(length);
 }
 
-FanetMac::FanetMac() : my_timer(MAC_SLOT_MS, state_wrapper)
+FanetMac::FanetMac() : my_timer(MAC_SLOT_MS, state_wrapper), my_addr(_my_addr)
 {
 	num_received = 0;
 }
@@ -223,6 +223,9 @@ bool FanetMac::begin(Fapp &app)
 	/* enter sleep mode */
 	sx1272_setArmed(false);
 
+	/* address */
+	_my_addr = read_addr();
+
 	/* start state machine */
 	my_timer.Start();
 
@@ -242,15 +245,6 @@ void FanetMac::state_wrapper()
 
 	fmac.handle_rx();
 	fmac.handle_tx();
-
-	static int i=0;
-	if(++i>10)
-	{
-		char buf[64];
-		sprintf(buf, "dc %.6f\n", sx1272_get_dutycyle());
-		serial_int.print(buf);
-		i=0;
-	}
 }
 
 bool FanetMac::isNeighbor(MacAddr addr)
@@ -376,7 +370,7 @@ void FanetMac::handle_rx()
 
 		/* Forward frame */
 		if (frm->forward && tx_fifo.size() < MAC_FIFO_SIZE - 3 && frm->rssi <= MAC_FORWARD_MAX_RSSI_DBM
-				&& (frm->dest == MacAddr() || isNeighbor(frm->dest)) && sx1272_get_dutycyle() < 0.095f)
+				&& (frm->dest == MacAddr() || isNeighbor(frm->dest)) && sx1272_get_dutycyle() < 0.009f)
 		{
 #if defined(SerialDEBUG) && MAC_debug_mode > 0
 			SerialDEBUG.println(F("### adding new forward frame"));
@@ -426,7 +420,7 @@ void FanetMac::handle_tx()
 
 		app_tx = true;
 	}
-	else if(sx1272_get_dutycyle() < 0.095f)
+	else if(sx1272_get_dutycyle() < 0.01f)
 	{
 #if MAC_debug_mode >= 2
 		static int queue_length = 0;
@@ -565,13 +559,65 @@ void FanetMac::handle_tx()
 	else
 	{
 		/* ignoring TX_TX_ONGOING */
-#if MAC_debug_mode > 0
-		printf("WAT: %d\n", tx_ret);
+#if MAC_debug_mode > 2
+		printf("## WAT: %d\n", tx_ret);
 #endif
 
 		if (app_tx)
 			delete frm;
 	}
+}
+
+MacAddr FanetMac::read_addr(void)
+{
+	uint64_t addr_container = *(__IO uint64_t*)MAC_ADDR_BASE;
+
+	/* identify container */
+	if((addr_container & MAC_ADDR_MAGIC_MASK) != MAC_ADDR_MAGIC)
+	{
+#if MAC_debug_mode > 0
+		printf("## No Addr set!\n");
+#endif
+		return MacAddr();
+	}
+
+	return MacAddr((addr_container>>16) & 0xFF, addr_container & 0xFFFF);
+}
+
+bool FanetMac::set_addr(MacAddr addr)
+{
+	/* test for clean storage */
+	if(*(__IO uint64_t*)MAC_ADDR_BASE != UINT64_MAX)
+		return false;
+
+	/* build config */
+	uint64_t addr_container = MAC_ADDR_MAGIC | (addr.manufacturer&0xFF)<<16 | (addr.id&0xFFFF);
+
+	HAL_FLASH_Unlock();
+	HAL_StatusTypeDef flash_ret = HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, MAC_ADDR_BASE, addr_container);
+	HAL_FLASH_Lock();
+
+	if(flash_ret == HAL_OK)
+		_my_addr = addr;
+
+	return (flash_ret == HAL_OK);
+}
+
+bool FanetMac::erase_addr(void)
+{
+	/* determine page */
+	FLASH_EraseInitTypeDef eraseInit = {0};
+	eraseInit.TypeErase = FLASH_TYPEERASE_PAGES;
+	eraseInit.Banks = FLASH_BANK_1;
+	eraseInit.Page = MAC_ADDR_PAGE;
+	eraseInit.NbPages = 1;
+
+	uint32_t sectorError = 0;
+	HAL_FLASH_Unlock();
+	HAL_StatusTypeDef ret = HAL_FLASHEx_Erase(&eraseInit, &sectorError);
+	HAL_FLASH_Lock();
+
+	return (ret == HAL_OK && sectorError == UINT32_MAX);
 }
 
 Frame::Frame()

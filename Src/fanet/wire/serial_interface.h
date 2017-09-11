@@ -43,6 +43,7 @@
 
 /* FLARM Replies */
 #ifdef FLARM
+#define FLARM_CMD_OK			FLARM_CMD_START "R OK"
 #define FLARM_CMD_ERROR			FLARM_CMD_START "R ERR"
 #endif
 
@@ -81,6 +82,7 @@
 #define FN_REPLYE_INVALID_ADDR		FANET_CMD_ERROR, 11, "invalid address"
 #define FN_REPLYE_INCOMPATIBLE_TYPE	FANET_CMD_ERROR, 12, "incompatible type"
 #define FN_REPLYE_TX_BUFF_FULL		FANET_CMD_ERROR, 14, "tx buffer full"
+#define FN_REPLYE_ADDR_GIVEN		FANET_CMD_ERROR, 15, "address already set"
 #define FN_REPLYE_CMD_TOO_SHORT		FANET_CMD_ERROR, 30, "too short"
 #define FN_REPLYE_BT_FAILED		BT_CMD_ERROR,    51, "bt failed"
 #define FN_REPLYE_BT_UNKNOWN_CMD	BT_CMD_ERROR,    52, "unknown BT command"
@@ -93,6 +95,7 @@
 #define DN_REPLYE_TOOLESSPARAMETER	DONGLE_CMD_ERROR,80, "too less parameter"
 #define DN_REPLYE_UNKNOWNPARAMETER	DONGLE_CMD_ERROR,81, "unknown parameter"
 #ifdef FLARM
+#define FA_REPLY_OK			FLARM_CMD_OK, 	 0,  ""
 #define FA_REPLYE_UNKNOWN_CMD		FLARM_CMD_ERROR, 90, "unknown FLARM command"
 #define FA_REPLYE_EXPIRED		FLARM_CMD_ERROR, 91, "FLARM expired"
 #endif
@@ -102,7 +105,7 @@
  * 					note: all values in float/int (NOT hex), time is required for FLARM in struct tm format
  * Transmit: 		#FNT type,dest_manufacturer,dest_id,forward,ack_required,length,length*2hex		note: all values in hex
  *
- * Address: 		#FNA manufacturer(hex),id(hex)
+ * Address: 		#FNA manufacturer(hex),id(hex)								note: w/o address is returned
  * Config: 		#FNC type(0..7),onlinelogging(0..1)							note: type see protocol.txt
  *
  *
@@ -110,7 +113,7 @@
  *
  * Maintenance/Dongle
  * Version:		#DGV
- * Standby:		#DGP powermode(0..1)									note: w/o status is returned
+ * Power:		#DGP powermode(0..1)									note: w/o status is returned
  * Region:		#DGL freq(868,915),power(2..20 (dBm))							note: 10dBm is sufficient for
  * 															Skytraxx modules using the
  * 															stock antenna
@@ -121,7 +124,8 @@
  * 															to RESEST and BOOT0
  *
  * FLARM
- * Expiration Data:	#FAX				-> #FAX year/month/day	in struct tm format
+ * Power		#FAP powermode(0..1)									note: w/o status is returned
+ * Expiration Data:	#FAX					-> #FAX year/month/day	in struct tm format
  *
  *
  * Bluetooth Commands
@@ -160,6 +164,7 @@ private:
 #ifdef FLARM
 	void flarm_eval(char *str);
 	void flarm_cmd_expires(char *ch_str);
+	void flarm_cmd_power(char *ch_str);
 #endif
 
 public:
