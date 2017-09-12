@@ -224,6 +224,7 @@ bool FanetMac::begin(Fapp &app)
 	sx1272_setArmed(false);
 
 	/* address */
+	//erase_addr();
 	_my_addr = read_addr();
 
 	/* start state machine */
@@ -370,7 +371,7 @@ void FanetMac::handle_rx()
 
 		/* Forward frame */
 		if (frm->forward && tx_fifo.size() < MAC_FIFO_SIZE - 3 && frm->rssi <= MAC_FORWARD_MAX_RSSI_DBM
-				&& (frm->dest == MacAddr() || isNeighbor(frm->dest)) && sx1272_get_dutycyle() < 0.009f)
+				&& (frm->dest == MacAddr() || isNeighbor(frm->dest)) && sx1272_get_airlimit() < 0.5f)
 		{
 #if defined(SerialDEBUG) && MAC_debug_mode > 0
 			SerialDEBUG.println(F("### adding new forward frame"));
@@ -420,7 +421,7 @@ void FanetMac::handle_tx()
 
 		app_tx = true;
 	}
-	else if(sx1272_get_dutycyle() < 0.01f)
+	else if(sx1272_get_airlimit() < 0.9f)
 	{
 #if MAC_debug_mode >= 2
 		static int queue_length = 0;

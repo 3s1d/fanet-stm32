@@ -157,11 +157,14 @@ void Serial_Interface::fanet_cmd_addr(char *ch_str)
 		return;
 	}
 
-	if(strstr(ch_str, "ERASE!") != NULL && fmac.erase_addr())
+	if(strstr(ch_str, "ERASE!") != NULL)
 	{
 		/* erase config */
 		//must never be used by the end user
-		print_line(FN_REPLY_OK);
+		if(fmac.erase_addr())
+			print_line(FN_REPLY_OK);
+		else
+			print_line(FN_REPLYE_FN_UNKNOWN_CMD);
 		return;
 	}
 
@@ -578,7 +581,7 @@ void Serial_Interface::flarm_cmd_expires(char *ch_str)
 		return;
 
 	char buf[64];
-	snprintf(buf, sizeof(buf), "%s%c %d/%d/%d\n", FLARM_CMD_START, CMD_EXPIRES, t->tm_year, t->tm_mon, t->tm_mday);
+	snprintf(buf, sizeof(buf), "%s%c %d,%d,%d\n", FLARM_CMD_START, CMD_EXPIRES, t->tm_year, t->tm_mon, t->tm_mday);
 	print(buf);
 }
 

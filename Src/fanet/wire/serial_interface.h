@@ -125,7 +125,7 @@
  *
  * FLARM
  * Power		#FAP powermode(0..1)									note: w/o status is returned
- * Expiration Data:	#FAX					-> #FAX year/month/day	in struct tm format
+ * Expiration Data:	#FAX					-> #FAX year,month,day	in struct tm format (decimal)
  *
  *
  * Bluetooth Commands

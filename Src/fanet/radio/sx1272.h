@@ -270,7 +270,7 @@ int sx1272_receiveFrame(uint8_t *data, int max_length);
 bool sx1272_receiveStart(void);
 int sx1272_getFrame(uint8_t *data, int max_length);
 
-float sx1272_get_dutycyle(void);
+float sx1272_get_airlimit(void);
 
 /* FSK extension */
 #ifdef SX1272_DO_FSK

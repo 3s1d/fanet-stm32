@@ -20,6 +20,7 @@ irq_callback sx1272_irq_cb = NULL;
 SPI_HandleTypeDef *sx1272_spi = NULL;
 uint32_t sx1272_last_tx_ticks = 0;
 float sx_dutycycle = 0.0f;
+float sx_airtime = 0.0f;
 
 #ifdef SX1272_DO_FSK
 #define SX_REG_BACKUP_POR	0
@@ -297,16 +298,6 @@ float sx_expectedAirTime_ms(void)
         float tOnAir = (tPreamble + tPayload) * 1000.0f;
 
         return tOnAir;
-}
-
-void sx_update_dutycyle(void)
-{
-	float txt = sx_expectedAirTime_ms();
-	float freet = HAL_GetTick() - sx1272_last_tx_ticks;
-	sx1272_last_tx_ticks = HAL_GetTick();
-
-	float dc =  txt / (txt + freet);
-	sx_dutycycle = sx_dutycycle*0.95f + dc*0.05f;
 }
 
 /*
@@ -901,7 +892,7 @@ int sx1272_sendFrame(uint8_t *data, int length, uint8_t cr)
 	}
 
 	/* update air time */
-	sx_update_dutycyle();
+	sx_airtime += sx_expectedAirTime_ms();
 
 	/* tx */
 	sx_setOpMode(LORA_TX_MODE);
@@ -1001,16 +992,20 @@ int sx1272_getFrame(uint8_t *data, int max_length)
 	return min(received, max_length);
 }
 
-float sx1272_get_dutycyle(void)
+float sx1272_get_airlimit(void)
 {
-	/* report current duty cycle in case we just transmitted */
-	uint32_t dt = HAL_GetTick() - sx1272_last_tx_ticks;
-	if(dt <= SX1272_AIRTIME_AVG_INTERVALL)
-		return sx_dutycycle;
+	static uint32_t last = 0;
+	uint32_t current = HAL_GetTick();
+	uint32_t dt = current - last;
+	last = current;
 
-	float airtime = sx_dutycycle*SX1272_AIRTIME_AVG_INTERVALL / dt;
+	/* reduce airtime by 1% */
+	sx_airtime -= dt*0.01f;
+	if(sx_airtime < 0.0f)
+		sx_airtime = 0.0f;
 
-	return airtime;
+	/* air time over 3min average -> 1800ms air time allowed */
+	return sx_airtime / 1800.0f;
 }
 
 #ifdef SX1272_DO_FSK
@@ -1085,7 +1080,7 @@ int sx1272_sendFrame_FSK(sx_fsk_conf_t *conf, uint8_t *data, int num_data)
 		sx_setDio0Irq(DIO0_NONE_FSK);
 
 	/* update air time */
-	sx_update_dutycyle();
+	sx_airtime += sx_expectedAirTime_ms();
 
 	/* start TX */
 	//note: seq: tx on start, fromtransmit -> lowpower, lowpower = seq_off (w/ init mode), start
