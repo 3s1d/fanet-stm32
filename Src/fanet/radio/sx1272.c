@@ -50,14 +50,14 @@ void delay_us(const int us)
 
 void sx_select()
 {
-	HAL_NVIC_DisableIRQ(SXDIO0_EXTI8_nIRQ);
+	HAL_NVIC_DisableIRQ(SXDIO0_EXTI8_EXTI_IRQn);
 	HAL_GPIO_WritePin(SXSEL_GPIO_Port, SXSEL_Pin, GPIO_PIN_RESET);
 }
 
 void sx_unselect()
 {
 	HAL_GPIO_WritePin(SXSEL_GPIO_Port, SXSEL_Pin, GPIO_PIN_SET);
-	HAL_NVIC_EnableIRQ(SXDIO0_EXTI8_nIRQ);
+	HAL_NVIC_EnableIRQ(SXDIO0_EXTI8_EXTI_IRQn);
 }
 
 uint8_t sx_readRegister(uint8_t address)
@@ -797,14 +797,14 @@ void sx1272_setIrqReceiver(irq_callback cb)
 	sx_writeRegister(REG_IRQ_FLAGS, 0xFF);
 
 	sx1272_irq_cb = cb;
-	HAL_NVIC_EnableIRQ(SXDIO0_EXTI8_nIRQ);
+	HAL_NVIC_EnableIRQ(SXDIO0_EXTI8_EXTI_IRQn);
 }
 
 void sx1272_clrIrqReceiver(void)
 {
 	sx_setOpMode(LORA_STANDBY_MODE);
 
-	HAL_NVIC_DisableIRQ(SXDIO0_EXTI8_nIRQ);
+	HAL_NVIC_DisableIRQ(SXDIO0_EXTI8_EXTI_IRQn);
 	sx1272_irq_cb = NULL;
 }
 

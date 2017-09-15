@@ -51,11 +51,11 @@
   /* Includes ------------------------------------------------------------------*/
 
 /* USER CODE BEGIN Includes */
-#define min(a,b) 	((a)<(b) ? (a):(b))
-#define max(a,b) 	((a)>(b) ? (a):(b))
+//#define min(a,b) 	((a)<(b) ? (a):(b))
+//#define max(a,b) 	((a)>(b) ? (a):(b))
 //#define abs(x) 		((x)>0 ? (x):-(x))
 
-#define constrain(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
+//#define constrain(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
 /* USER CODE END Includes */
 
 /* Private define ------------------------------------------------------------*/
@@ -71,7 +71,7 @@
 #define GPIO_PPS_EXTI0_EXTI_IRQn EXTI0_IRQn
 #define SXDIO0_EXTI8_Pin GPIO_PIN_8
 #define SXDIO0_EXTI8_GPIO_Port GPIOA
-#define SDDIO0_EXTI8_EXTI_IRQn EXTI9_5_IRQn
+#define SXDIO0_EXTI8_EXTI_IRQn EXTI9_5_IRQn
 #define SXSEL_Pin GPIO_PIN_9
 #define SXSEL_GPIO_Port GPIOA
 #define SXRESET_Pin GPIO_PIN_10
@@ -80,9 +80,6 @@
 #define GPIO_VBUS_GPIO_Port GPIOA
 
 /* USER CODE BEGIN Private defines */
-
-#define SXDIO0_EXTI8_nIRQ	EXTI9_5_IRQn
-#define GPIO_PPS_EXTI0_nIRQ	EXTI0_IRQn
 
 /* USER CODE END Private defines */
 

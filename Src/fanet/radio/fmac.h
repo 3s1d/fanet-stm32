@@ -13,6 +13,8 @@
 #include <string.h>
 #include <math.h>
 
+#define constrain(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
+
 /*
  * Hard coded tx time assumption:
  * -SR7
@@ -116,8 +118,8 @@
 #include "stm32l4xx.h"
 #include "stm32l4xx_hal.h"
 
-#include "../lib/LinkedList.h"
-#include "../lib/TimerObject.h"
+#include "lib/LinkedList.h"
+#include "lib/TimerObject.h"
 
 /* note: zero copy stack might be faster and more memory efficient, but who cares @ 9kBaud and 64Ks of ram... */
 

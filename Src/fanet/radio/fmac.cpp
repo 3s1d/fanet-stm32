@@ -12,9 +12,9 @@
 #include "stm32l4xx_hal.h"
 #include "spi.h"
 
-#include "../lib/random.h"
-#include "../radio/sx1272.h"
-#include "../radio/fmac.h"
+#include "lib/random.h"
+#include "sx1272.h"
+#include "fmac.h"
 
 
 /* get next frame which can be sent out */
