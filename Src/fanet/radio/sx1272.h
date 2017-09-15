@@ -267,7 +267,6 @@ int sx1272_getRssi(void);
 
 int sx1272_sendFrame(uint8_t *data, int length, uint8_t cr);
 int sx1272_receiveFrame(uint8_t *data, int max_length);
-bool sx1272_receiveStart(void);
 int sx1272_getFrame(uint8_t *data, int max_length);
 
 float sx1272_get_airlimit(void);

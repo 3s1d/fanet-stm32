@@ -615,8 +615,9 @@ void Serial_Interface::handle_rx(void)
 	if (cmd_rxd)
 	{
 #if defined(SerialDEBUG) && (SERIAL_debug_mode > 1)
-		SerialDEBUG.print(F("### rx:"));
-		SerialDEBUG.print(rxStr);
+		print((char *)"### rx:'");
+		print(line);
+		print((char *)"'\n");
 #endif
 		if(!strncmp(line, FANET_CMD_START, 3))
 			fanet_eval(line);
@@ -675,7 +676,7 @@ void Serial_Interface::handle_frame(Frame *frm)
 		snprintf(buf, sizeof(buf), "%02X", frm->payload[i]);
 		print(buf);
 	}
-	prints("\n");
+	print((char*) "\n");
 }
 
 void Serial_Interface::print_line(const char *type, int key, const char *msg)

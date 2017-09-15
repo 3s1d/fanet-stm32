@@ -224,7 +224,6 @@ bool FanetMac::begin(Fapp &app)
 	sx1272_setArmed(false);
 
 	/* address */
-	//erase_addr();
 	_my_addr = read_addr();
 
 	/* start state machine */
@@ -237,7 +236,6 @@ bool FanetMac::begin(Fapp &app)
 }
 
 /* wrapper to fit callback into c++ */
-#include "../wire/serial_interface.h"
 void FanetMac::state_wrapper()
 {
 	/* only handle stuff during none-sleep mode */

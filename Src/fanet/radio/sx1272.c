@@ -300,6 +300,27 @@ float sx_expectedAirTime_ms(void)
         return tOnAir;
 }
 
+//todo make protected!
+bool sx_receiveStart(void)
+{
+#if (SX1272_debug_mode > 0)
+	Serial.println(F("## SX1272 receive start"));
+#endif
+
+	sx_setOpMode(LORA_STANDBY_MODE);
+
+	/* prepare receiving */
+	sx_writeRegister(REG_FIFO_RX_BASE_ADDR, 0x00);
+	sx_writeRegister(REG_PAYLOAD_LENGTH_LORA, 0xFF);		//is this evaluated in explicit mode?
+
+	/* clear any rx done flag */
+	sx_writeRegister(REG_IRQ_FLAGS, IRQ_RX_DONE);
+
+	/* switch irq behavior to rx_done and enter rx cont mode */
+	sx_setDio0Irq(DIO0_RX_DONE_LORA);
+	return sx_setOpMode(LORA_RXCONT_MODE);
+}
+
 /*
  * public
  */
@@ -676,7 +697,7 @@ bool sx1272_setArmed(bool rxmode)
 	if(rxmode && (opmode == LORA_SLEEP_MODE || opmode == LORA_STANDBY_MODE))
 	{
 		/* enable rx */
-		bool ret = sx1272_receiveStart();
+		bool ret = sx_receiveStart();
 		if(ret)
 			sx1272_armed = true;
 		return ret;
@@ -721,7 +742,8 @@ void sx1272_irq(void)
 		sx_writeRegister_burst(REG_BITRATE_MSB, sx_reg_backup[SX_REG_BACKUP_LORA], sizeof(sx_reg_backup[SX_REG_BACKUP_LORA]));
 
 		/* switch irq behavior back and re-enter rx mode */
-		sx1272_receiveStart();
+		if(sx1272_armed)
+			sx_receiveStart();
 		return;
 	}
 #endif
@@ -761,7 +783,8 @@ void sx1272_irq(void)
 	sx_writeRegister(REG_IRQ_FLAGS, 0xFF);
 
 	/* switch irq behavior back and re-enter rx mode */
-	sx1272_receiveStart();
+	if(sx1272_armed)
+		sx_receiveStart();
 }
 
 
@@ -823,9 +846,9 @@ int sx1272_channel_free4tx(void)
 		return TX_TX_ONGOING;
 
 	/* in case of receiving, is it ongoing? */
-	for(int i=0; i<400;i++)
+	for(int i=0; i<400 && (mode == LORA_RXCONT_MODE || mode == LORA_RXSINGLE_MODE); i++)
 	{
-		if((mode == LORA_RXCONT_MODE || mode == LORA_RXSINGLE_MODE) && (sx_readRegister(REG_MODEM_STAT) & 0x0B))
+		if(sx_readRegister(REG_MODEM_STAT) & 0x0B)
 			return TX_RX_ONGOING;
 		delay_us(10);
 	}
@@ -957,26 +980,6 @@ int sx1272_receiveFrame(uint8_t *data, int max_length)
 	Serial.println(received, DEC);
 #endif
 	return received;
-}
-
-bool sx1272_receiveStart(void)
-{
-#if (SX1272_debug_mode > 0)
-	Serial.println(F("## SX1272 receive start"));
-#endif
-
-	sx_setOpMode(LORA_STANDBY_MODE);
-
-	/* prepare receiving */
-	sx_writeRegister(REG_FIFO_RX_BASE_ADDR, 0x00);
-	sx_writeRegister(REG_PAYLOAD_LENGTH_LORA, 0xFF);		//is this evaluated in explicit mode?
-
-	/* clear any rx done flag */
-	sx_writeRegister(REG_IRQ_FLAGS, IRQ_RX_DONE);
-
-	/* switch irq behaviour to rx_done and enter rx cont mode */
-	sx_setDio0Irq(DIO0_RX_DONE_LORA);
-	return sx_setOpMode(LORA_RXCONT_MODE);
 }
 
 int sx1272_getFrame(uint8_t *data, int max_length)

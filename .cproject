@@ -337,10 +337,10 @@
 							<tool id="fr.ac6.managedbuild.tool.gnu.cross.cpp.linker.872603077" name="MCU G++ Linker" superClass="fr.ac6.managedbuild.tool.gnu.cross.cpp.linker">
 								<option id="fr.ac6.managedbuild.tool.gnu.cross.cpp.linker.script.2063644153" name="Linker Script (-T)" superClass="fr.ac6.managedbuild.tool.gnu.cross.cpp.linker.script" value="../STM32L432KCUx_FLASH.ld" valueType="string"/>
 								<option id="gnu.cpp.link.option.flags.1855838809" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-specs=nosys.specs -specs=nano.specs -u _printf_float" valueType="string"/>
-								<option id="gnu.cpp.link.option.paths.336281801" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
+								<option id="gnu.cpp.link.option.paths.336281801" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Src/flarm}&quot;"/>
 								</option>
-								<option id="gnu.cpp.link.option.libs.1342353917" superClass="gnu.cpp.link.option.libs" valueType="libs">
+								<option id="gnu.cpp.link.option.libs.1342353917" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="cas"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.960595482" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">

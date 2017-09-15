@@ -8,7 +8,7 @@
 #ifndef SERIAL_H_
 #define SERIAL_H_
 
-#include <string>
+#include <string.h>
 #include "serial.h"
 
 #include "../fanet.h"
@@ -185,11 +185,6 @@ public:
 
 	void print_line(const char *type, int key, const char *msg);
 	void print(char *str);
-
-	void prints(std::string str)
-	{
-		print((char *)str.c_str());
-	}
 };
 
 extern Serial_Interface serial_int;
