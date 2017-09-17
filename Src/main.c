@@ -56,6 +56,7 @@
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
+bool initialized = false;
 
 /* USER CODE END PV */
 
@@ -80,16 +81,15 @@ int _write (int fd, char *ptr, int len)
 int _read (int fd, char *ptr, int len)
 {
 	//TODO: untested
-	*ptr = 0x00; // Flush the character buffer
+	*ptr = 0x00;// Flush the character buffer
 	HAL_UART_Receive(&hlpuart1, (uint8_t*) ptr, 1, 0xFFFF);
 	return 1;
 }
 #endif
 
 #if defined(DEGUB) && defined(DEBUG_SEMIHOSTING)
-	#error "DEBUG and DEBUG_SEMIHOSTING is defined for print. Only one of them can be used."
+#error "DEBUG and DEBUG_SEMIHOSTING is defined for print. Only one of them can be used."
 #endif
-
 
 /* USER CODE END PFP */
 
@@ -98,10 +98,13 @@ int _read (int fd, char *ptr, int len)
 /* EXTI wrapper */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
+	if (!initialized)
+		return;
+
 	if (GPIO_Pin == SXDIO0_EXTI8_Pin)
 		sx1272_irq();
 
-	if(GPIO_Pin == GPIO_PPS_EXTI0_Pin)
+	if (GPIO_Pin == GPIO_PPS_EXTI0_Pin)
 		fanet_pps_int();
 }
 
@@ -149,7 +152,24 @@ int main(void)
 
 	/* initialize serial */
 	serial_t *serial = serial_init(HAL_UART_get());
+
+#if 0
+	/*
+	 * WARNING this removes the read out protection and kills the bootloader!
+	 */
+	FLASH_OBProgramInitTypeDef obProgram = {0};
+	obProgram.OptionType = OPTIONBYTE_RDP;
+	obProgram.RDPLevel = OB_RDP_LEVEL_0;
+	HAL_FLASH_Unlock();
+	HAL_FLASH_OB_Unlock();
+	HAL_FLASHEx_OBProgram(&obProgram);
+	HAL_FLASH_OB_Launch();
+	HAL_FLASH_OB_Lock();
+	HAL_FLASH_Lock();
+#endif
 	fanet_init(serial);
+
+	initialized = true;
 
   /* USER CODE END 2 */
 
@@ -179,13 +199,12 @@ void SystemClock_Config(void)
 
     /**Initializes the CPU, AHB and APB busses clocks 
     */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_MSI;
-  RCC_OscInitStruct.MSIState = RCC_MSI_ON;
-  RCC_OscInitStruct.MSICalibrationValue = 0;
-  RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_6;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  RCC_OscInitStruct.HSICalibrationValue = 16;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_MSI;
-  RCC_OscInitStruct.PLL.PLLN = 48;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+  RCC_OscInitStruct.PLL.PLLN = 9;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV7;
   RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
   RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV8;

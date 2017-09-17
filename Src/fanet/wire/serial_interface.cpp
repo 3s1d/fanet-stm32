@@ -666,7 +666,7 @@ void Serial_Interface::handle_frame(Frame *frm)
 	/* src_manufacturer,src_id,broadcast,signature,type,payloadlength,payload */
 
 	char buf[128];
-	snprintf(buf, sizeof(buf), "%s,%X,%X,%X,%X,%X,%X,",
+	snprintf(buf, sizeof(buf), "%s %X,%X,%X,%X,%X,%X,",
 			FANET_CMD_START CMD_RX_FRAME, frm->src.manufacturer, frm->src.id, frm->dest==MacAddr(), frm->signature,
 			frm->type, frm->payload_length);
 	print(buf);
