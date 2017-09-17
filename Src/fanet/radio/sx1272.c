@@ -300,7 +300,6 @@ float sx_expectedAirTime_ms(void)
         return tOnAir;
 }
 
-//todo make protected!
 bool sx_receiveStart(void)
 {
 #if (SX1272_debug_mode > 0)
@@ -320,6 +319,52 @@ bool sx_receiveStart(void)
 	sx_setDio0Irq(DIO0_RX_DONE_LORA);
 	return sx_setOpMode(LORA_RXCONT_MODE);
 }
+
+int sx_channel_free4tx(void)
+{
+	uint8_t mode = sx_getOpMode();
+	if(SX_IN_FSK_MODE(mode))
+		return TX_FSK_ONGOING;
+	mode &= LORA_MODE_MASK;
+
+	/* are we transmitting anyway? */
+	if(mode == LORA_TX_MODE)
+		return TX_TX_ONGOING;
+
+	/* in case of receiving, is it ongoing? */
+	for(int i=0; i<400 && (mode == LORA_RXCONT_MODE || mode == LORA_RXSINGLE_MODE); i++)
+	{
+		if(sx_readRegister(REG_MODEM_STAT) & 0x0B)
+			return TX_RX_ONGOING;
+		delay_us(10);
+	}
+
+	/*
+	 * CAD
+	 */
+
+	sx_setOpMode(LORA_STANDBY_MODE);
+	sx_writeRegister(REG_IRQ_FLAGS, IRQ_CAD_DONE | IRQ_CAD_DETECTED);	/* clearing flags */
+	sx_setOpMode(LORA_CAD_MODE);
+
+	/* wait for CAD completion */
+//TODO: it may enter a life lock here...
+	uint8_t iflags;
+	while(((iflags=sx_readRegister(REG_IRQ_FLAGS)) & IRQ_CAD_DONE) == 0)
+		delay_us(1);
+
+	if(iflags & IRQ_CAD_DETECTED)
+	{
+		/* re-establish old mode */
+		if(mode == LORA_RXCONT_MODE || mode == LORA_RXSINGLE_MODE || mode == LORA_SLEEP_MODE)
+			sx_setOpMode(mode);
+
+		return TX_RX_ONGOING;
+	}
+
+	return TX_OK;
+}
+
 
 /*
  * public
@@ -689,27 +734,39 @@ bool sx1272_setPower(int pwr)
 		return true;
 }
 
-bool sx1272_setArmed(bool rxmode)
+bool sx1272_setArmed(bool mode)
 {
-	/* store state */
+	if(mode == sx1272_armed)
+		return true;
+
+	if(sx1272_irq_cb != NULL)
+		HAL_NVIC_DisableIRQ(SXDIO0_EXTI8_EXTI_IRQn);
+
+	/* store mode */
 	uint8_t opmode = sx_getOpMode();
 
-	if(rxmode && (opmode == LORA_SLEEP_MODE || opmode == LORA_STANDBY_MODE))
+	/* update state */
+	sx1272_armed = mode;
+
+	if(mode)
 	{
 		/* enable rx */
-		bool ret = sx_receiveStart();
-		if(ret)
-			sx1272_armed = true;
-		return ret;
+#ifdef SX1272_DO_FSK
+		if(opmode != LORA_TX_MODE && opmode != GFSK_TX_MODE)
+#else
+		if(opmode != LORA_TX_MODE)
+#endif
+			sx_receiveStart();
 	}
-	else if(!rxmode)
+	else
 	{
 		/* enter power save */
-		bool ret = sx_setOpMode(LORA_SLEEP_MODE);
-		if(ret)
-			sx1272_armed = false;
-		return ret;
+		sx_setOpMode(LORA_SLEEP_MODE);
 	}
+
+	if(sx1272_irq_cb != NULL)
+		HAL_NVIC_EnableIRQ(SXDIO0_EXTI8_EXTI_IRQn);
+
 	return true;
 }
 
@@ -834,51 +891,6 @@ int sx1272_getRssi(void)
 	return rssi;
 }
 
-int sx1272_channel_free4tx(void)
-{
-	uint8_t mode = sx_getOpMode();
-	if(SX_IN_FSK_MODE(mode))
-		return TX_FSK_ONGOING;
-	mode &= LORA_MODE_MASK;
-
-	/* are we transmitting anyway? */
-	if(mode == LORA_TX_MODE)
-		return TX_TX_ONGOING;
-
-	/* in case of receiving, is it ongoing? */
-	for(int i=0; i<400 && (mode == LORA_RXCONT_MODE || mode == LORA_RXSINGLE_MODE); i++)
-	{
-		if(sx_readRegister(REG_MODEM_STAT) & 0x0B)
-			return TX_RX_ONGOING;
-		delay_us(10);
-	}
-
-	/*
-	 * CAD
-	 */
-
-	sx_setOpMode(LORA_STANDBY_MODE);
-	sx_writeRegister(REG_IRQ_FLAGS, IRQ_CAD_DONE | IRQ_CAD_DETECTED);	/* clearing flags */
-	sx_setOpMode(LORA_CAD_MODE);
-
-	/* wait for CAD completion */
-//TODO: it may enter a life lock here...
-	uint8_t iflags;
-	while(((iflags=sx_readRegister(REG_IRQ_FLAGS)) & IRQ_CAD_DONE) == 0)
-		delay_us(1);
-
-	if(iflags & IRQ_CAD_DETECTED)
-	{
-		/* re-establish old mode */
-		if(mode == LORA_RXCONT_MODE || mode == LORA_RXSINGLE_MODE)
-			sx_setOpMode(mode);
-
-		return TX_RX_ONGOING;
-	}
-
-	return TX_OK;
-}
-
 /***********************************/
 int sx1272_sendFrame(uint8_t *data, int length, uint8_t cr)
 {
@@ -887,7 +899,7 @@ int sx1272_sendFrame(uint8_t *data, int length, uint8_t cr)
 #endif
 
 	/* channel accessible? */
-	int state = sx1272_channel_free4tx();
+	int state = sx_channel_free4tx();
 	if(state != TX_OK)
 		return state;
 
@@ -1026,7 +1038,7 @@ int sx1272_sendFrame_FSK(sx_fsk_conf_t *conf, uint8_t *data, int num_data)
 		return TX_ERROR;
 
 	/* channel accessible? */
-	int state = sx1272_channel_free4tx();
+	int state = sx_channel_free4tx();
 	if(state != TX_OK)
 		return state;
 
