@@ -125,7 +125,7 @@ void Serial_Interface::fanet_cmd_state(char *ch_str)
 	if(fmac.my_addr == MacAddr())
 		print_line(FN_REPLYE_NO_SRC_ADDR);
 	else if(!sx1272_isArmed())
-		print_line(FN_REPLYM_DOWNDOWN);
+		print_line(FN_REPLYM_PWRDOWN);
 	else
 		print_line(FN_REPLY_OK);
 }
@@ -278,7 +278,7 @@ void Serial_Interface::fanet_cmd_transmit(char *ch_str)
 	if(fmac.transmit(frm) == 0)
 	{
 		if(!sx1272_isArmed())
-			print_line(FN_REPLYM_DOWNDOWN);
+			print_line(FN_REPLYM_PWRDOWN);
 		else
 			print_line(FN_REPLY_OK);
 #ifdef FANET_NAME_AUTOBRDCAST

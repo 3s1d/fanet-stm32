@@ -82,7 +82,7 @@
 #define FN_REPLYE_NO_SRC_ADDR		FANET_CMD_ERROR, 10, "no source address"
 #define FN_REPLYE_INVALID_ADDR		FANET_CMD_ERROR, 11, "invalid address"
 #define FN_REPLYE_INCOMPATIBLE_TYPE	FANET_CMD_ERROR, 12, "incompatible type"
-#define FN_REPLYM_DOWNDOWN		FANET_CMD_MSG,	 13, "power down"
+#define FN_REPLYM_PWRDOWN		FANET_CMD_MSG,	 13, "power down"
 #define FN_REPLYE_TX_BUFF_FULL		FANET_CMD_ERROR, 14, "tx buffer full"
 #define FN_REPLYE_ADDR_GIVEN		FANET_CMD_ERROR, 15, "address already set"
 #define FN_REPLYE_CMD_TOO_SHORT		FANET_CMD_ERROR, 30, "too short"
