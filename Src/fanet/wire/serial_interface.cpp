@@ -123,13 +123,11 @@ void Serial_Interface::fanet_cmd_state(char *ch_str)
 
 	/* The state is only of interest if a src addr is set */
 	if(fmac.my_addr == MacAddr())
-	{
 		print_line(FN_REPLYE_NO_SRC_ADDR);
-	}
+	else if(!sx1272_isArmed())
+		print_line(FN_REPLYM_DOWNDOWN);
 	else
-	{
 		print_line(FN_REPLY_OK);
-	}
 }
 
 /* Address: #FNA manufacturer(hex),id(hex) */
@@ -233,6 +231,13 @@ void Serial_Interface::fanet_cmd_transmit(char *ch_str)
 		return;
 	}
 
+	/* no need to generate a package. tx queue is full */
+	if(!fmac.tx_queue_free())
+	{
+		print_line(FN_REPLYE_TX_BUFF_FULL);
+		return;
+	}
+
 	Frame *frm = new Frame(fmac.my_addr);
 
 	/* header */
@@ -272,7 +277,10 @@ void Serial_Interface::fanet_cmd_transmit(char *ch_str)
 	/* pass to mac */
 	if(fmac.transmit(frm) == 0)
 	{
-		print_line(FANET_CMD_OK, 0, NULL);
+		if(!sx1272_isArmed())
+			print_line(FN_REPLYM_DOWNDOWN);
+		else
+			print_line(FN_REPLY_OK);
 #ifdef FANET_NAME_AUTOBRDCAST
 		if(frm->type == FRM_TYPE_NAME)
 			app.allow_brdcast_name(false);

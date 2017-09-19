@@ -23,12 +23,15 @@ typedef struct serial_t
 {
 	UART_HandleTypeDef *uart;
 	circBuf_t *rx_crc_buf;
-	int num_cmds;
+	int pushed_cmds;
+	int pulled_cmds;
 } serial_t;
 
 serial_t *serial_init(UART_HandleTypeDef *uart);
 
 bool serial_poll(serial_t *serial, char *line, int num);
+
+void serial_print(serial_t *serial, char *str);
 
 #ifdef __cplusplus
 }

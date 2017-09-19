@@ -311,6 +311,7 @@ void FanetMac::handle_rx()
 			break;
 		}
 	}
+
 	/* neighbor unknown until now, add to list */
 	if (neighbor_known == false)
 	{
@@ -320,6 +321,8 @@ void FanetMac::handle_rx()
 
 		neighbors.add(new NeighborNode(frm->src));
 	}
+
+
 
 	/* is the frame a forwarded one and is it still in the tx queue? */
 	Frame *frm_list = tx_fifo.frame_in_list(frm);

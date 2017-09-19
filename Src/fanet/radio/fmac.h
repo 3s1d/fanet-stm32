@@ -406,6 +406,7 @@ public:
 
 	bool begin(Fapp &app);
 
+	bool tx_queue_free(void){return (tx_fifo.size() < MAC_FIFO_SIZE); };
 	int transmit(Frame *frm) { return tx_fifo.add(frm); };
 
 	/* Addr */

@@ -350,6 +350,7 @@ int sx_channel_free4tx(void)
 	/* wait for CAD completion */
 //TODO: it may enter a life lock here...
 	uint8_t iflags;
+
 	while(((iflags=sx_readRegister(REG_IRQ_FLAGS)) & IRQ_CAD_DONE) == 0)
 		delay_us(1);
 

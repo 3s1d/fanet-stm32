@@ -66,8 +66,6 @@
 #define SXSEL_GPIO_Port GPIOA
 #define SXRESET_Pin GPIO_PIN_10
 #define SXRESET_GPIO_Port GPIOA
-#define GPIO_VBUS_Pin GPIO_PIN_15
-#define GPIO_VBUS_GPIO_Port GPIOA
 
 /* USER CODE BEGIN Private defines */
 
