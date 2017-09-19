@@ -175,7 +175,10 @@ public:
 		int32_t lat_i = roundf(lat * 93206.0f);
 		int32_t lon_i = roundf(lon * 46603.0f);
 
-		*((int32_t*)buf) = lat_i;
+		buf[0] = ((uint8_t*)&lat_i)[0];
+		buf[1] = ((uint8_t*)&lat_i)[1];
+		buf[2] = ((uint8_t*)&lat_i)[2];
+
 		buf[3] = ((uint8_t*)&lon_i)[0];
 		buf[4] = ((uint8_t*)&lon_i)[1];
 		buf[5] = ((uint8_t*)&lon_i)[2];

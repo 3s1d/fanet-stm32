@@ -110,7 +110,7 @@ bit 0-7 	Subheader, Subtype (TBD)
 Service (Type = 4)
 
 [Byte 0]	Header	(additional payload will be added in order 6 to 1, followed by Extended Header 7 to 0)
-bit 7		Internet Gateway (no additional payload)
+bit 7		Internet Gateway (no additional payload required)
 bit 6		Temperature (+1byte in 0.5 degree, 2-Complement)
 bit 5		Wind (+3Byte: 1byte Heading in 360/256 degree, 1byte speed and 1byte gusts in 0.2km/h (each: bit 7 scale 5x or 1x, bit 0-6))
 bit 1-4		TBD
