@@ -95,7 +95,7 @@ private:
 			buffer[9] = climb10 & 0x7F;
 
 		/* Heading */
-		buffer[10] = constrain((int)roundf(heading*256.0f)/360.0f, 0, 255);
+		buffer[10] = constrain((int)roundf(heading*256.0f/360.0f), 0, 255);
 
 		/* Turn rate */
 		if(!isnan(turnrate))
