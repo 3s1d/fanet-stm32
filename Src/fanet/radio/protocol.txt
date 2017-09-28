@@ -213,7 +213,7 @@ Manufacturer IDs:
 0x00		[reserved]
 0x01		Skytraxx
 0x04		AirWhere
-0x05		Andreas
+0x05		Windline
 0x11		Skytraxx+FLARM, FANET+
 ...
 0xFC		Unregistered Devices
