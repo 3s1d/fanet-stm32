@@ -112,15 +112,17 @@ Service (Type = 4)
 [Byte 0]	Header	(additional payload will be added in order 6 to 1, followed by Extended Header 7 to 0)
 bit 7		Internet Gateway (no additional payload required)
 bit 6		Temperature (+1byte in 0.5 degree, 2-Complement)
-bit 5		Wind (+3Byte: 1byte Heading in 360/256 degree, 1byte speed and 1byte gusts in 0.2km/h (each: bit 7 scale 5x or 1x, bit 0-6))
-bit 1-4		TBD
+bit 5		Wind (+3byte: 1byte Heading in 360/256 degree, 1byte speed and 1byte gusts in 0.2km/h (each: bit 7 scale 5x or 1x, bit 0-6))
+bit 4		Humidity (+1byte: in 0.4% (%rh*10/4))
+bit 3		Preasure (+2bye: in 1Pa, offseted by 430hPa, unsigned little endian (hPa-430)*100)
+bit 1-2		TBD
 bit 0		Extended Header (+1byte) (TBD, it may indicate the number of available landmarks) 
 			The following is only mandatory if additional data will be added. Broadcasting the only the gateway flag doesn't require pos information. 
 [Byte 1-3 or Byte 2-4]	Position	(Little Endian, 2-Complement)		
 bit 0-23	Latitude	(Absolute, see below)
 [Byte 4-6 or Byte 5-7]	Position	(Little Endian, 2-Complement)
 bit 0-23	Longitude   (Absolute, see below)
-+ additional data according to the sub header order (6 down to 0)
++ additional data according to the sub header order (bit 6 down to 1)
 
 ------------
 
@@ -211,6 +213,7 @@ Manufacturer IDs:
 0x00		[reserved]
 0x01		Skytraxx
 0x04		AirWhere
+0x05		Andreas
 0x11		Skytraxx+FLARM, FANET+
 ...
 0xFC		Unregistered Devices
