@@ -238,10 +238,6 @@ bool FanetMac::begin(Fapp &app)
 /* wrapper to fit callback into c++ */
 void FanetMac::state_wrapper()
 {
-	/* only handle stuff during none-sleep mode */
-	if (!sx1272_isArmed())
-		return;
-
 	fmac.handle_rx();
 	fmac.handle_tx();
 }
@@ -398,8 +394,8 @@ void FanetMac::handle_rx()
  */
 void FanetMac::handle_tx()
 {
-	/* still in backoff */
-	if (HAL_GetTick() < csma_next_tx)
+	/* still in backoff or chip turned off*/
+	if (HAL_GetTick() < csma_next_tx  || !sx1272_isArmed())
 		return;
 
 	/* find next send-able packet */

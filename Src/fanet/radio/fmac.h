@@ -409,13 +409,16 @@ public:
 
 	bool begin(Fapp &app);
 
-	bool tx_queue_free(void){return (tx_fifo.size() < MAC_FIFO_SIZE); };
+	bool tx_queue_depleted(void) { return (tx_fifo.size() == 0); };
+	bool tx_queue_free(void){ return (tx_fifo.size() < MAC_FIFO_SIZE); };
 	int transmit(Frame *frm) { return tx_fifo.add(frm); };
 
 	/* Addr */
 	const MacAddr &my_addr;		//ready only
 	bool set_addr(MacAddr addr);
 	bool erase_addr(void);
+
+	int numNeighbors(void){ return neighbors.size(); };
 };
 
 extern FanetMac fmac;

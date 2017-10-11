@@ -740,6 +740,10 @@ bool sx1272_setArmed(bool mode)
 	if(mode == sx1272_armed)
 		return true;
 
+	/* transmit packet in buffer */
+	while(sx_getOpMode() == LORA_TX_MODE)
+		HAL_Delay(1);
+
 	if(sx1272_irq_cb != NULL)
 		HAL_NVIC_DisableIRQ(SXDIO0_EXTI8_EXTI_IRQn);
 
