@@ -40,7 +40,7 @@ Destination Address (if unicast is set):
 
 Signature (if signature bit is set):
 [Byte 5-8 or Byte 8-11 (if unicast is set)]
-4byte 		Signature (todo)
+4byte 		Signature
 
 
 
@@ -157,6 +157,17 @@ bit 3-0		Layer:
 
 ------------
 
+Remote Configuration (Type = 6)
+Note 1: Signature is highly recommended
+Note 2: In order to indicate a successful the receiver shall transmit the configured feature instantaneously.
+
+[Byte 0]
+bit 7-0		Subtype:
+			0:		 TBD
+			1 .. 15: Reply feature. Byte [1] is type (and forward bit) followed by the payload. A feature with no further payload is considered to be removed.
+			16:		 Position. Byte [1-6] latitude/longitude, Byte [7-8] altitude, Byte [9] heading (encoded like in type 1)
+
+------------
 
 Coordinate Formats
 
@@ -190,6 +201,13 @@ bit 0-23	Longitude
 			Longitude = value_lon/46603 \in [-180, +180]
 			(Note: 32bit floating point is required for direkt conversion)
 
+
+------------
+
+Signature
+
+Use SHA1 and iterate over pseudo header (first 4 byte:  type + source address, were bits 6 and 7 of byte 0 are set to 0), over the payload, and over a pre-shared secret/key.
+The first 4 byte of the resulting hash shall be put into the signature field.
 
 ------------
 
