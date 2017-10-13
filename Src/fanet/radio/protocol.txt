@@ -159,13 +159,14 @@ bit 3-0		Layer:
 
 Remote Configuration (Type = 6)
 Note 1: Signature is highly recommended
-Note 2: In order to indicate a successful the receiver shall transmit the configured feature instantaneously.
+Note 2: In order to indicate a successful configuration the receiver shall transmit the configured feature instantaneously.
 
 [Byte 0]
 bit 7-0		Subtype:
-			0:		 TBD
-			1 .. 15: Reply feature. Byte [1] is type (and forward bit) followed by the payload. A feature with no further payload is considered to be removed.
-			16:		 Position. Byte [1-6] latitude/longitude, Byte [7-8] altitude, Byte [9] heading (encoded like in type 1)
+			0:		 Acknowledge configuration: Byte [1] subtype of ack
+			1:		 Request / Advertise configurable ... TODO
+			2:		 Position. Byte [1-6] latitude/longitude, Byte [7-8] altitude, Byte [9] heading (encoded like in type 1)
+			3 .. 15: Reply feature. Byte [1] is type (and forward bit) followed by the payload. A feature with no further payload is considered to be removed.
 
 ------------
 
