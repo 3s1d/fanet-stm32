@@ -158,7 +158,7 @@ bit 3-0		Layer:
 ------------
 
 Remote Configuration (Type = 6)
-Note 1: Signature is highly recommended
+Note 1: Signature (symmetric) is highly recommended
 Note 2: In order to indicate a successful configuration the receiver shall transmit the configured feature instantaneously.
 
 [Byte 0]
@@ -200,15 +200,15 @@ bit 0-23	Longitude
 			Details:
 			Latitude = value_lat/93206	\in [-90, +90]
 			Longitude = value_lon/46603 \in [-180, +180]
-			(Note: 32bit floating point is required for direkt conversion)
+			(Note: 32bit floating point is required for direct conversion)
 
 
 ------------
 
-Signature
+Signature (symmetric)
 
 Use SHA1 and iterate over pseudo header (first 4 byte:  type + source address, were bits 6 and 7 of byte 0 are set to 0), over the payload, and over a pre-shared secret/key.
-The first 4 byte of the resulting hash shall be put into the signature field.
+The first 4 byte of the resulting hash shall be interpreted as 32bit integer and put into the signature field (= reverse order due to little endian encoding).
 
 ------------
 

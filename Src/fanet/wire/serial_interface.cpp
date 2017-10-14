@@ -215,7 +215,7 @@ void Serial_Interface::fanet_cmd_config(char *ch_str)
 	}
 }
 
-/* Transmit: #FNT type,dest_manufacturer,dest_id,forward,ack_required,length,length*2hex */
+/* Transmit: #FNT type,dest_manufacturer,dest_id,forward,ack_required,length,length*2hex[,signature] */
 //note: all in HEX
 void Serial_Interface::fanet_cmd_transmit(char *ch_str)
 {
@@ -271,8 +271,18 @@ void Serial_Interface::fanet_cmd_transmit(char *ch_str)
 	for(int i=0; i<frm->payload_length; i++)
 	{
 		char sstr[3] = {p[i*2], p[i*2+1], '\0'};
+		if(strlen(sstr) != 2)
+		{
+			print_line(FN_REPLYE_CMD_TOO_SHORT);
+			delete frm;
+			return;
+		}
 		frm->payload[i] = strtol(sstr,  NULL,  16);
 	}
+
+	/* signature */
+	if((p = strchr(p, SEPARATOR)) != NULL)
+		frm->signature = strtol(++p, NULL, 16) & 0xFFFFFFFF;
 
 	/* pass to mac */
 	if(fmac.transmit(frm) == 0)
