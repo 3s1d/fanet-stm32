@@ -166,7 +166,10 @@ bit 7-0		Subtype:
 			0:		 Acknowledge configuration: Byte [1] subtype of ack
 			1:		 Request / Advertise configurable ... TODO
 			2:		 Position. Byte [1-6] latitude/longitude, Byte [7-8] altitude, Byte [9] heading (encoded like in type 1)
-			3 .. 15: Reply feature. Byte [1] is type (and forward bit) followed by the payload. A feature with no further payload is considered to be removed.
+			3: 		 Reply feature (recommended for name). Byte [1] is type (and forward bit) followed by the payload.
+			4 .. 7:	 Reply feature. Byte [1] is type (and forward bit) followed by the payload.
+			8 .. 15: Reply feature (recommended for landmark slots 0 .. 7). Byte [1] is type (and forward bit) followed by the payload. 
+				A feature with no further payload is considered to be removed.
 
 ------------
 
@@ -208,7 +211,7 @@ bit 0-23	Longitude
 Signature (symmetric)
 
 Use SHA1 and iterate over pseudo header (first 4 byte:  type + source address, were bits 6 and 7 of byte 0 are set to 0), over the payload, and over a pre-shared secret/key.
-The first 4 byte of the resulting hash shall be interpreted as 32bit integer and put into the signature field (= reverse order due to little endian encoding).
+The first 4 byte of the resulting hash shall be interpreted as 32bit integer and put into the signature field (= normal order due to little endian encoding).
 
 ------------
 

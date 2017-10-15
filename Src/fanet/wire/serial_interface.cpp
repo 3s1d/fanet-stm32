@@ -282,7 +282,7 @@ void Serial_Interface::fanet_cmd_transmit(char *ch_str)
 
 	/* signature */
 	if((p = strchr(p, SEPARATOR)) != NULL)
-		frm->signature = strtol(++p, NULL, 16) & 0xFFFFFFFF;
+		frm->signature = ((uint32_t)strtoll(++p, NULL, 16));
 
 	/* pass to mac */
 	if(fmac.transmit(frm) == 0)
@@ -685,7 +685,7 @@ void Serial_Interface::handle_frame(Frame *frm)
 
 	char buf[128];
 	snprintf(buf, sizeof(buf), "%s %X,%X,%X,%X,%X,%X,",
-			FANET_CMD_START CMD_RX_FRAME, frm->src.manufacturer, frm->src.id, frm->dest==MacAddr(), frm->signature,
+			FANET_CMD_START CMD_RX_FRAME, frm->src.manufacturer, frm->src.id, frm->dest==MacAddr(), (unsigned int)frm->signature,
 			frm->type, frm->payload_length);
 	print(buf);
 

@@ -193,7 +193,7 @@ public:
 	int ack_requested = 0;
 	bool forward = false;
 
-	int signature = 0;
+	uint32_t signature = 0;
 
 	/* payload */
 	int type = 0;
