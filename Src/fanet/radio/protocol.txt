@@ -236,6 +236,7 @@ Manufacturer IDs:
 0x01		Skytraxx
 0x04		AirWhere
 0x05		Windline
+0x07		SoftRF
 0x11		Skytraxx+FLARM, FANET+
 ...
 0xFC		Unregistered Devices
