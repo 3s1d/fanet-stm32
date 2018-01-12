@@ -401,8 +401,8 @@ private:
 
 	bool isNeighbor(MacAddr addr);
 
-	MacAddr read_addr();
 public:
+	bool doforward = true;
 
 	FanetMac();
 	~FanetMac(){};
@@ -418,6 +418,7 @@ public:
 	const MacAddr &my_addr;		//ready only
 	bool set_addr(MacAddr addr);
 	bool erase_addr(void);
+	MacAddr read_addr();
 
 	int numNeighbors(void){ return neighbors.size(); };
 };

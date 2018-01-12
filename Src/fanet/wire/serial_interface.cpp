@@ -209,6 +209,15 @@ void Serial_Interface::fanet_cmd_config(char *ch_str)
 	}
 	else
 	{
+#ifdef FLARM
+		/* set FLARM type */
+		if(type == 1)					//paraglider
+			casw.set_aircraft_type(AT_SOFT_HG);
+		else if(type == 2)				//hangglider
+			casw.set_aircraft_type(AT_FIXED_HG);
+#endif
+
+		/* set FANET type */
 		app.aircraft_type = type;
 		app.do_online_tracking = !!logging;
 		print_line(FN_REPLY_OK);
