@@ -100,7 +100,7 @@ private:
 		/* Turn rate */
 		if(!isnan(turnrate))
 		{
-			int turnr4 = constrain((int)roundf(turnrate*4.0f), 0, 255);
+			int turnr4 = constrain((int)roundf(turnrate*4.0f), -255, 255);
 			if(abs(turnr4) > 63)
 				buffer[11] = ((turnr4 + (turnr4>=0?2:-2))/4) | (1<<7);			//set scale factor
 			else
