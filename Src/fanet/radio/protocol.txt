@@ -53,6 +53,8 @@ No Payload, must be unicast
 -----------
 
 Tracking (Type = 1)
+[recommended intervall: floor((#neighbors/10 + 1) * 5s) ]
+Note: Done by app layer of the fanet module
 
 [Byte 0-2]	Position	(Little Endian, 2-Complement)
 bit 0-23	Latitude 	(Absolute, see below)
@@ -92,8 +94,9 @@ bit 0-6		Value 		in 0.25deg/s
 ------------
 
 Name (Type = 2)
+[recommended intervall: every 4min]
 
-8bit String (of arbitrary length)
+8bit String (of arbitrary length, \0 termination not required)
 
 ------------
 
@@ -132,21 +135,21 @@ Landmarks (Type = 5)
 bit 7		TBD
 bit 4-6		Number of landmark feature (Required to replace old one. As e.g. the wind changed a feature may also change.)
 bit 0-3		Subtype:
-			0	TBD		(maybe used to remove the feature?)
-			1	Text	
-			2	Line
-			3	Area
-			4	Circle
-			5	Filled circle
-			6	Position (absolute)
-			6-14 TBD
+			0:	  TBD		(maybe used to remove the feature?)
+			1:	  Text	
+			2:	  Line
+			3:	  Area
+			4:	  Circle
+			5:	  Filled circle
+			6:	  Position (absolute)
+			6-14: TBD
 [Byte 1]
 bit 7-4		'Number of elements'-1=n (String in words n<=16 (max string -> 32byte), circles n<=6, others n<=8)
 bit 3-0		Layer:
-			0	Info
-			1	Warning
-			2	Keep out
-			3	Touch down
+			0:	Info
+			1:	Warning
+			2:	Keep out
+			3:	Touch down
 [n Elements]
 			Text (1): 					Position (4 Bytes compressed, see below, only once) + Chars (1 Byte)
 			Line (2): 					Position (4 Bytes compressed, see below, minimum 2 elements)
@@ -170,6 +173,26 @@ bit 7-0		Subtype:
 			4 .. 7:	 Reply feature. Byte [1] is type (and forward bit) followed by the payload.
 			8 .. 15: Reply feature (recommended for landmark slots 0 .. 7). Byte [1] is type (and forward bit) followed by the payload. 
 				A feature with no further payload is considered to be removed.
+
+------------
+
+Ground Tracking (Type = 7)
+[recommended intervall: floor((#neighbors/10 + 1) * 5s) ]
+
+[Byte 0-2]	Position	(Little Endian, 2-Complement)
+bit 0-23	Latitude 	(Absolute, see below)
+[Byte 3-5]	Position	(Little Endian, 2-Complement)
+bit 0-23	Longitude 	(Absolute, see below)
+[Byte 6]
+bit 7-4		Type
+			0:    Other
+			1:    Walking
+			2:    Vehicle
+			4:    Need a ride
+			8:    Need help
+			15:   Emergency
+			Rest: TBD
+bit 3-0		TBD
 
 ------------
 

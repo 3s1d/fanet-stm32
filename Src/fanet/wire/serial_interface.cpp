@@ -111,8 +111,7 @@ void Serial_Interface::fanet_cmd_state(char *ch_str)
 	app.set(lat, lon, alt, speed, climb, heading, turn);
 
 #ifdef FLARM
-	if(t.tm_year >= 117)
-		casw.update_position(lat, lon, alt, speed, climb, heading, &t);
+	casw.update_position(lat, lon, alt, speed, climb, heading, &t);
 #else
 	if(t.tm_sec)
 	{
