@@ -14,8 +14,6 @@ extern "C" {
 #define SX1272_DO_FSK
 #define SX1272_AIRTIME_AVG_INTERVALL			5000
 
-#define SX1272_debug_mode 				0
-
 #define min(a,b) 	((a)<(b) ? (a):(b))
 #define max(a,b) 	((a)>(b) ? (a):(b))
 

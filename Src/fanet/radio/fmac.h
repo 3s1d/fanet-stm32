@@ -313,8 +313,11 @@ public:
 
 		/* payload */
 		payload_length = length - payload_start;
-		payload = new uint8_t[payload_length];
-		memcpy(payload, &data[payload_start], payload_length);
+		if(payload_length > 0)
+		{
+			payload = new uint8_t[payload_length];
+			memcpy(payload, &data[payload_start], payload_length);
+		}
 	}
 
 	inline bool operator == (const Frame& frm) const

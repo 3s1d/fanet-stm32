@@ -94,7 +94,7 @@ int MacFifo::add(Frame *frm)
 		{
 			//note: this never succeeds for received packets -> tx condition only
 			Frame *ffrm = fifo.get(i);
-			if (frm->ack_requested && ffrm->src == fmac.my_addr && ffrm->dest == frm->dest)
+			if (ffrm->ack_requested && ffrm->src == fmac.my_addr && ffrm->dest == frm->dest)
 			{
 				if (!prim)
 					__enable_irq();
