@@ -109,7 +109,7 @@
  * Transmit: 		#FNT type,dest_manufacturer,dest_id,forward,ack_required,length,length*2hex[,signature]	note: all values in hex
  *
  * Address: 		#FNA manufacturer(hex),id(hex)								note: w/o address is returned
- * Config: 		#FNC type(0..7),onlinelogging(0..1)[,groundType(0..F in hex)]				note: type see protocol.txt
+ * Config: 		#FNC airType(0..7),onlinelogging(0..1)[,groundType(0..F in hex)]			note: type see protocol.txt
  * Mode:		#FNM 0..1										note: 0=flying(default), 1=ground
  *
  *

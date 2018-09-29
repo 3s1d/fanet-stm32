@@ -189,7 +189,7 @@ void Serial_Interface::fanet_cmd_addr(char *ch_str)
 	}
 }
 
-/* Config: #FNC type(0..7),onlinelogging(0..1)[,groundType(0..F in hex)] */
+/* Config: #FNC airType(0..7),onlinelogging(0..1)[,groundType(0..F in hex)] */
 void Serial_Interface::fanet_cmd_config(char *ch_str)
 {
 #if SERIAL_debug_mode > 0
