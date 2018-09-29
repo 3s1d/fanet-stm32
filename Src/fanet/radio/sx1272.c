@@ -13,7 +13,6 @@
 #include <math.h>
 #endif
 
-
 bool sx1272_armed = false;
 sx_region_t sx1272_region = {.channel = 0, .dBm = 0};
 irq_callback sx1272_irq_cb = NULL;
@@ -28,7 +27,7 @@ float sx_airtime = 0.0f;
 uint8_t sx_reg_backup[2][111];
 #endif
 
-//1% too slow, for24Mhz
+//1% too slow, for 24Mhz
 void delay_us(const int us)
 {
 	uint32_t i = us * 2;
@@ -76,13 +75,8 @@ uint8_t sx_readRegister(uint8_t address)
 	sx_unselect();
 
 #if (SX1272_debug_mode > 1)
-	Serial.print(F("## SX1272 read reg("));
-	Serial.print(address, HEX);
-	Serial.print(F(")="));
-	Serial.print(value, HEX);
-	Serial.println();
+	printf("## SX1272 read reg(%02X)=%02X\n", address, value);
 #endif
-
 	return value;
 }
 
@@ -97,11 +91,7 @@ void sx_writeRegister(uint8_t address, uint8_t data)
 	sx_unselect();
 
 #if (SX1272_debug_mode > 1)
-	Serial.print(F("## SX1272 write reg("));
-	Serial.print(address, HEX);
-	Serial.print(F(")="));
-	Serial.print(data, HEX);
-	Serial.println();
+	printf("## SX1272 write reg(%02X)=%02X\n", address, value);
 #endif
 }
 
@@ -144,22 +134,22 @@ bool sx_setOpMode(uint8_t mode)
 	switch (mode)
 	{
 	case LORA_RXCONT_MODE:
-		Serial.println(F("## SX1272 opmode: rx continous"));
+		printf("## SX1272 opmode: rx continous\n");
 	break;
 	case LORA_TX_MODE:
-		Serial.println(F("## SX1272 opmode: tx"));
+		printf("## SX1272 opmode: tx\n");
 	break;
 	case LORA_SLEEP_MODE:
-		Serial.println(F("## SX1272 opmode: sleep"));
+		printf("## SX1272 opmode: sleep\n");
 	break;
 	case LORA_STANDBY_MODE:
-		Serial.println(F("## SX1272 opmode: standby"));
+		printf("## SX1272 opmode: standby\n");
 	break;
 	case LORA_CAD_MODE:
-		Serial.println(F("## SX1272 opmode: cad"));
+		printf("## SX1272 opmode: cad\n");
 	break;
 	default:
-		Serial.println(F("## SX1272 opmode: unknown"));
+		printf("## SX1272 opmode: unknown\n");
 	}
 #endif
 
@@ -207,8 +197,7 @@ bool sx_setOpMode(uint8_t mode)
 	}
 
 #if (SX1272_debug_mode > 1)
-	Serial.print(F("## SX1272 opmode: "));
-	Serial.println(opmode, HEX);
+	printf("## SX1272 opmode: %02X\n", opmode);
 #endif
 
 	return mode == opmode;
@@ -303,7 +292,7 @@ float sx_expectedAirTime_ms(void)
 bool sx_receiveStart(void)
 {
 #if (SX1272_debug_mode > 0)
-	Serial.println(F("## SX1272 receive start"));
+	printf("## SX1272 receive start\n");
 #endif
 
 	sx_setOpMode(LORA_STANDBY_MODE);
@@ -350,7 +339,6 @@ int sx_channel_free4tx(void)
 	/* wait for CAD completion */
 //TODO: it may enter a life lock here...
 	uint8_t iflags;
-
 	while(((iflags=sx_readRegister(REG_IRQ_FLAGS)) & IRQ_CAD_DONE) == 0)
 		delay_us(1);
 
@@ -375,8 +363,7 @@ int sx_channel_free4tx(void)
 bool sx1272_init(SPI_HandleTypeDef *spi)
 {
 #if (SX1272_debug_mode > 1)
-	Serial.println();
-	Serial.println(F("## SX1272 begin"));
+	printf("## SX1272 begin\n");
 #endif
 
 	sx1272_spi = spi;
@@ -417,8 +404,7 @@ bool sx1272_init(SPI_HandleTypeDef *spi)
 void sx1272_setBandwidth(uint8_t bw)
 {
 #if (SX1272_debug_mode > 0)
-	Serial.print(F("## SX1272 BW: "));
-	Serial.println(bw, HEX);
+	printf("## SX1272 BW:%02X\n", bw;
 #endif
 
 	/* store state */
@@ -448,8 +434,7 @@ uint8_t sx1272_getBandwidth(void)
 	uint8_t bw = sx_readRegister(REG_MODEM_CONFIG1) & BW_MASK;
 
 #if (SX1272_debug_mode > 0)
-	Serial.print(F("## SX1272 BW="));
-	Serial.println(bw, HEX);
+	printf("## SX1272 BW=%02X\n", bw;
 #endif
 
 	return bw;
@@ -458,8 +443,7 @@ uint8_t sx1272_getBandwidth(void)
 void sx1272_setLowDataRateOptimize(bool ldro)
 {
 #if (SX1272_debug_mode > 0)
-	Serial.print(F("## SX1272 LDRO: "));
-	Serial.println(!!ldro, DEC);
+	printf("## SX1272 LDRO:%d\n", !!ldro);
 #endif
 
 	/* store state */
@@ -481,8 +465,7 @@ void sx1272_setLowDataRateOptimize(bool ldro)
 void sx1272_setPayloadCrc(bool crc)
 {
 #if (SX1272_debug_mode > 0)
-	Serial.print(F("## SX1272 CRC: "));
-	Serial.println(!!crc, DEC);
+	printf("## SX1272 CRC:%d\n", !!crc);
 #endif
 
 	/* store state */
@@ -504,8 +487,7 @@ void sx1272_setPayloadCrc(bool crc)
 void sx1272_setSpreadingFactor(uint8_t spr)
 {
 #if (SX1272_debug_mode > 0)
-	Serial.print(F("## SX1272 SF: "));
-	Serial.println(spr, HEX);
+	printf("## SX1272 SF:%02X\n", spr);
 #endif
 
 	/* store state */
@@ -548,8 +530,7 @@ uint8_t sx1272_getSpreadingFactor(void)
 	uint8_t sf = sx_readRegister(REG_MODEM_CONFIG2) & SF_MASK;
 
 #if (SX1272_debug_mode > 0)
-	Serial.print(F("## SX1272 SF="));
-	Serial.println(sf, HEX);
+	printf("## SX1272 SF=%02X\n", sf);
 #endif
 
 	return sf;
@@ -558,8 +539,7 @@ uint8_t sx1272_getSpreadingFactor(void)
 bool sx1272_setCodingRate(uint8_t cr)
 {
 #if (SX1272_debug_mode > 0)
-	Serial.print(F("## SX1272 CR: "));
-	Serial.println(cr, HEX);
+	printf("## SX1272 CR:%02X\n", cr);
 #endif
 
 	/* store state */
@@ -587,8 +567,7 @@ uint8_t sx1272_getCodingRate(void)
 	uint8_t cr = sx_readRegister(REG_MODEM_CONFIG1) & CR_MASK;
 
 #if (SX1272_debug_mode > 0)
-	Serial.print(F("## SX1272 CR="));
-	Serial.println(cr, HEX);
+	printf("## SX1272 CR=%02X\n", cr);
 #endif
 
 	return cr;
@@ -597,8 +576,7 @@ uint8_t sx1272_getCodingRate(void)
 bool sx1272_setChannel(uint32_t ch)
 {
 #if (SX1272_debug_mode > 0)
-	Serial.print(F("## SX1272 CH: "));
-	Serial.println(ch, HEX);
+	printf("## SX1272 CH:%02X\n", ch);
 #endif
 
 	/* store state */
@@ -621,12 +599,6 @@ bool sx1272_setChannel(uint32_t ch)
 	if(opmode != LORA_STANDBY_MODE)
 		ret = sx_setOpMode(opmode);
 
-	#if (SX1272_debug_mode > 1)
-		Serial.println();
-		Serial.print(F("## SX1272 CH="));
-		Serial.println(ch, HEX);
-	#endif
-
 	return ret;
 }
 
@@ -638,9 +610,7 @@ uint32_t sx1272_getChannel(void)
 	uint32_t ch = ((uint32_t) freq3 << 16) + ((uint32_t) freq2 << 8) + (uint32_t) freq1;
 
 #if (SX1272_debug_mode > 0)
-	Serial.println();
-	Serial.print(F("## SX1272 CH="));
-	Serial.println(ch, HEX);
+	printf("## SX1272 CH=%02X\n", ch);
 #endif
 
 	return ch;
@@ -649,8 +619,7 @@ uint32_t sx1272_getChannel(void)
 void sx1272_setExplicitHeader(bool exhdr)
 {
 #if (SX1272_debug_mode > 0)
-	Serial.print(F("## SX1272 explicit header: "));
-	Serial.println(exhdr, DEC);
+	printf("## SX1272 explicit header:%d\n", exhdr);
 #endif
 
 	/* store state */
@@ -680,10 +649,8 @@ void sx1272_setLnaGain(uint8_t gain, bool lnaboost)
 		sx_setOpMode(LORA_STANDBY_MODE);
 
 #if (SX1272_debug_mode > 0)
-	Serial.print(F("## SX1272 lna gain: "));
-	Serial.println((gain<<LNAGAIN_OFFSET) | (lnaboost?0x3:0x0), HEX);
+	printf("## SX1272 lna gain:%d\n", (gain<<LNAGAIN_OFFSET) | (lnaboost?0x3:0x0);
 #endif
-
 	sx_writeRegister(REG_LNA, (gain<<LNAGAIN_OFFSET) | (lnaboost?0x3:0x0));
 
 	/* restore state */
@@ -701,8 +668,7 @@ bool sx1272_setPower(int pwr)
 		pwr = 20;
 
 #if (SX1272_debug_mode > 0)
-	Serial.print(F("## SX1272 dBm: "));
-	Serial.println(pwr, DEC);
+	printf("## SX1272 dBm:%d\n", pwr);
 #endif
 
 	/* store state */
@@ -900,7 +866,7 @@ int sx1272_getRssi(void)
 int sx1272_sendFrame(uint8_t *data, int length, uint8_t cr)
 {
 #if (SX1272_debug_mode > 0)
-	Serial.print(F("## SX1272 send frame..."));
+	printf("## SX1272 send frame...");
 #endif
 
 	/* channel accessible? */
@@ -941,7 +907,7 @@ int sx1272_sendFrame(uint8_t *data, int length, uint8_t cr)
 	if(sx1272_irq_cb)
 	{
 #if (SX1272_debug_mode > 1)
-		Serial.println("INT");
+		printf("INT\n");
 #endif
 		return TX_OK;
 	}
@@ -949,12 +915,12 @@ int sx1272_sendFrame(uint8_t *data, int length, uint8_t cr)
 	for(int i=0; i<100 && sx_getOpMode() == LORA_TX_MODE; i++)
 	{
 #if (SX1272_debug_mode > 0)
-		Serial.print(".");
+		printf(".");
 #endif
 		HAL_Delay(5);
 	}
 #if (SX1272_debug_mode > 0)
-	Serial.println("done");
+	printf("done\n");
 #endif
 	return TX_OK;
 }
@@ -962,7 +928,7 @@ int sx1272_sendFrame(uint8_t *data, int length, uint8_t cr)
 int sx1272_receiveFrame(uint8_t *data, int max_length)
 {
 #if (SX1272_debug_mode > 0)
-	Serial.print(F("## SX1272 receive frame..."));
+	printf("## SX1272 receive frame...");
 #endif
 
 	sx_setOpMode(LORA_STANDBY_MODE);
@@ -978,7 +944,7 @@ int sx1272_receiveFrame(uint8_t *data, int max_length)
 	for(int i=0; i<400 && !(sx_readRegister(REG_IRQ_FLAGS) & 0x40); i++)
 	{
 #if (SX1272_debug_mode > 0)
-		Serial.print(".");
+		printf(".");
 #endif
 		HAL_Delay(5);
 	}
@@ -993,8 +959,7 @@ int sx1272_receiveFrame(uint8_t *data, int max_length)
 	sx_writeRegister(REG_IRQ_FLAGS, IRQ_RX_DONE);
 
 #if (SX1272_debug_mode > 0)
-	Serial.print("done, ");
-	Serial.println(received, DEC);
+	printf("done, %d\n", received);
 #endif
 	return received;
 }
@@ -1002,9 +967,8 @@ int sx1272_receiveFrame(uint8_t *data, int max_length)
 int sx1272_getFrame(uint8_t *data, int max_length)
 {
 #if (SX1272_debug_mode > 0)
-	Serial.println(F("## SX1272 get frame"));
+	printf("## SX1272 get frame\n");
 #endif
-
 	const int received = sx_readRegister(REG_RX_NB_BYTES);
 	const int rxstartaddr = sx_readRegister(REG_FIFO_RX_CURRENT_ADDR);
 	sx_readFifo(rxstartaddr, data, min(received, max_length));

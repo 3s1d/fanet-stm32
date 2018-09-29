@@ -94,7 +94,7 @@ int MacFifo::add(Frame *frm)
 		{
 			//note: this never succeeds for received packets -> tx condition only
 			Frame *ffrm = fifo.get(i);
-			if (ffrm->ack_requested && ffrm->src == fmac.my_addr && ffrm->dest == frm->dest)
+			if (ffrm->ack_requested && ffrm->src == fmac.myAddr && ffrm->dest == frm->dest)
 			{
 				if (!prim)
 					__enable_irq();
@@ -156,26 +156,22 @@ bool MacFifo::remove_delete_acked_frame(MacAddr dest)
 }
 
 /* this is executed in a non-linear fashion */
-void FanetMac::frame_received(int length)
+void FanetMac::frameReceived(int length)
 {
 	/* quickly read registers */
 	num_received = sx1272_getFrame(rx_frame, sizeof(rx_frame));
 	int rssi = sx1272_getRssi();
 
-#if defined(SerialDEBUG) && MAC_debug_mode > 0
-	SerialDEBUG.print(F("### Mac Rx: "));
-	SerialDEBUG.print(num_received, DEC);
-	SerialDEBUG.print(F(" @ "));
-	SerialDEBUG.print(rssi);
-	SerialDEBUG.print(F(" "));
+#if MAC_debug_mode > 0
+	printf("### Mac Rx:%d @ %d ", num_received, rssi);
 
 	for(int i=0; i<num_received; i++)
 	{
-		SerialDEBUG.print(rx_frame[i], HEX);
+		printf("02X", rx_frame[i]);
 		if(i<num_received-1)
-		SerialDEBUG.print(":");
+			printf(":");
 	}
-	SerialDEBUG.println();
+	printf("\n");
 #endif
 
 	/* build frame from stream */
@@ -188,14 +184,9 @@ void FanetMac::frame_received(int length)
 }
 
 /* wrapper to fit callback into c++ */
-void FanetMac::frame_rx_wrapper(int length)
+void FanetMac::frameRxWrapper(int length)
 {
-	fmac.frame_received(length);
-}
-
-FanetMac::FanetMac() : my_timer(MAC_SLOT_MS, state_wrapper), my_addr(_my_addr)
-{
-	num_received = 0;
+	fmac.frameReceived(length);
 }
 
 bool FanetMac::begin(Fapp &app)
@@ -212,7 +203,7 @@ bool FanetMac::begin(Fapp &app)
 	sx1272_setSyncWord(MAC_SYNCWORD);
 	sx1272_setPayloadCrc(true);
 	sx1272_setLnaGain(LNAGAIN_G1_MAX, true);
-	sx1272_setIrqReceiver(frame_rx_wrapper);
+	sx1272_setIrqReceiver(frameRxWrapper);
 
 	/* region specific. default is EU */
 	sx_region_t region;
@@ -224,10 +215,10 @@ bool FanetMac::begin(Fapp &app)
 	sx1272_setArmed(false);
 
 	/* address */
-	_my_addr = read_addr();
+	_myAddr = readAddr();
 
 	/* start state machine */
-	my_timer.Start();
+	myTimer.Start();
 
 	/* start random machine */
 	randomSeed(HAL_GetUIDw0() + HAL_GetUIDw1() + HAL_GetUIDw2());
@@ -236,10 +227,10 @@ bool FanetMac::begin(Fapp &app)
 }
 
 /* wrapper to fit callback into c++ */
-void FanetMac::state_wrapper()
+void FanetMac::stateWrapper()
 {
-	fmac.handle_rx();
-	fmac.handle_tx();
+	fmac.handleRx();
+	fmac.handleTx();
 }
 
 bool FanetMac::isNeighbor(MacAddr addr)
@@ -256,17 +247,17 @@ bool FanetMac::isNeighbor(MacAddr addr)
  */
 void FanetMac::ack(Frame* frm)
 {
-#if defined(SerialDEBUG) && MAC_debug_mode > 0
-	SerialDEBUG.println(F("### generating ACK"));
+#if MAC_debug_mode > 0
+	printf("### generating ACK\n");
 #endif
 
 	/* generate reply */
-	Frame *ack = new Frame(my_addr);
+	Frame *ack = new Frame(myAddr);
 	ack->type = FRM_TYPE_ACK;
 	ack->dest = frm->src;
 
 	/* only do a 2 hop ACK in case it was requested and we received it via a two hop link (= forward bit is not set anymore) */
-	if (frm->ack_requested == MAC_ACK_TWOHOP && !frm->forward)
+	if (frm->ack_requested == FRM_ACK_TWOHOP && !frm->forward)
 		ack->forward = true;
 
 	/* add to front of fifo */
@@ -278,7 +269,7 @@ void FanetMac::ack(Frame* frm)
 /*
  * Processes stuff from rx_fifo
  */
-void FanetMac::handle_rx()
+void FanetMac::handleRx()
 {
 	/* nothing to do */
 	if (rx_fifo.size() == 0)
@@ -286,7 +277,7 @@ void FanetMac::handle_rx()
 		/* clean neighbors list */
 		for (int i = 0; i < neighbors.size(); i++)
 		{
-			if (neighbors.get(i)->isaround() == false)
+			if (neighbors.get(i)->isAround() == false)
 				delete neighbors.remove(i);
 		}
 
@@ -329,16 +320,16 @@ void FanetMac::handle_rx()
 		if (frm->rssi > frm_list->rssi + MAC_FORWARD_MIN_DB_BOOST)
 		{
 			/* somebody broadcasted it already towards our direction */
-#if defined(SerialDEBUG) && MAC_debug_mode > 0
-			SerialDEBUG.println(F("### rx frame better than org. dropping both."));
+#if MAC_debug_mode > 0
+			printf("### rx frame better than org. dropping both.\n");
 #endif
 			/* received frame is at least 20dB better than the original -> no need to rebroadcast */
 			tx_fifo.remove_delete(frm_list);
 		}
 		else
 		{
-#if defined(SerialDEBUG) && MAC_debug_mode > 0
-			SerialDEBUG.println(F("### adjusting tx time"));
+#if MAC_debug_mode >= 2
+			printf("### adjusting tx time");
 #endif
 			/* adjusting new departure time */
 			frm_list->next_tx = HAL_GetTick() + random(MAC_FORWARD_DELAY_MIN, MAC_FORWARD_DELAY_MAX);
@@ -346,7 +337,7 @@ void FanetMac::handle_rx()
 	}
 	else
 	{
-		if ((frm->dest == MacAddr() || frm->dest == my_addr) && frm->src != my_addr)
+		if ((frm->dest == MacAddr() || frm->dest == myAddr) && frm->src != myAddr)
 		{
 			/* a relevant frame */
 			if (frm->type == FRM_TYPE_ACK)
@@ -370,8 +361,8 @@ void FanetMac::handle_rx()
 		if (doforward && frm->forward && tx_fifo.size() < MAC_FIFO_SIZE - 3 && frm->rssi <= MAC_FORWARD_MAX_RSSI_DBM
 				&& (frm->dest == MacAddr() || isNeighbor(frm->dest)) && sx1272_get_airlimit() < 0.5f)
 		{
-#if defined(SerialDEBUG) && MAC_debug_mode > 0
-			SerialDEBUG.println(F("### adding new forward frame"));
+#if MAC_debug_mode >= 2
+			printf("### adding new forward frame\n");
 #endif
 			/* prevent from re-forwarding */
 			frm->forward = false;
@@ -392,7 +383,7 @@ void FanetMac::handle_rx()
 /*
  * get a from from tx_fifo (or the app layer) and transmit it
  */
-void FanetMac::handle_tx()
+void FanetMac::handleTx()
 {
 	/* still in backoff or chip turned off*/
 	if (HAL_GetTick() < csma_next_tx  || !sx1272_isArmed())
@@ -403,14 +394,12 @@ void FanetMac::handle_tx()
 	Frame* frm;
 	bool app_tx = false;
 	if (myApp->is_broadcast_ready(neighbors.size()))
-//todo: check if first element of txfifo is not an ACK!
 	{
 		/* the app wants to broadcast the glider state */
 		frm = myApp->get_frame();
 		if (frm == NULL)
 			return;
 
-//todo?? set forward bit only if no inet base station is available, this MAY break the layers
 		if (neighbors.size() <= MAC_MAXNEIGHBORS_4_TRACKING_2HOP)
 			frm->forward = true;
 		else
@@ -566,7 +555,7 @@ void FanetMac::handle_tx()
 	}
 }
 
-MacAddr FanetMac::read_addr(void)
+MacAddr FanetMac::readAddr(void)
 {
 	uint64_t addr_container = *(__IO uint64_t*)MAC_ADDR_BASE;
 
@@ -582,7 +571,7 @@ MacAddr FanetMac::read_addr(void)
 	return MacAddr((addr_container>>16) & 0xFF, addr_container & 0xFFFF);
 }
 
-bool FanetMac::set_addr(MacAddr addr)
+bool FanetMac::setAddr(MacAddr addr)
 {
 	/* test for clean storage */
 	if(*(__IO uint64_t*)MAC_ADDR_BASE != UINT64_MAX)
@@ -596,12 +585,12 @@ bool FanetMac::set_addr(MacAddr addr)
 	HAL_FLASH_Lock();
 
 	if(flash_ret == HAL_OK)
-		_my_addr = addr;
+		_myAddr = addr;
 
 	return (flash_ret == HAL_OK);
 }
 
-bool FanetMac::erase_addr(void)
+bool FanetMac::eraseAddr(void)
 {
 	/* determine page */
 	FLASH_EraseInitTypeDef eraseInit = {0};
@@ -616,11 +605,6 @@ bool FanetMac::erase_addr(void)
 	HAL_FLASH_Lock();
 
 	return (ret == HAL_OK && sectorError == UINT32_MAX);
-}
-
-Frame::Frame()
-{
-	src = fmac.my_addr;
 }
 
 FanetMac fmac = FanetMac();

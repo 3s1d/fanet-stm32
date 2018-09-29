@@ -121,7 +121,7 @@ void Serial_Interface::fanet_cmd_state(char *ch_str)
 
 
 	/* The state is only of interest if a src addr is set */
-	if(fmac.my_addr == MacAddr())
+	if(fmac.myAddr == MacAddr())
 		print_line(FN_REPLYE_NO_SRC_ADDR);
 	else if(!sx1272_isArmed())
 		print_line(FN_REPLYM_PWRDOWN);
@@ -149,7 +149,7 @@ void Serial_Interface::fanet_cmd_addr(char *ch_str)
 	{
 		/* report addr */
 		char buf[64];
-		snprintf(buf, sizeof(buf), "%s%c %02X,%04X\n", FANET_CMD_START, CMD_ADDR, fmac.my_addr.manufacturer, fmac.my_addr.id);
+		snprintf(buf, sizeof(buf), "%s%c %02X,%04X\n", FANET_CMD_START, CMD_ADDR, fmac.myAddr.manufacturer, fmac.myAddr.id);
 		print(buf);
 		return;
 	}
@@ -158,7 +158,7 @@ void Serial_Interface::fanet_cmd_addr(char *ch_str)
 	{
 		/* erase config */
 		//must never be used by the end user
-		if(fmac.erase_addr())
+		if(fmac.eraseAddr())
 			print_line(FN_REPLY_OK);
 		else
 			print_line(FN_REPLYE_FN_UNKNOWN_CMD);
@@ -175,7 +175,7 @@ void Serial_Interface::fanet_cmd_addr(char *ch_str)
 	{
 		print_line(FN_REPLYE_INVALID_ADDR);
 	}
-	else if(fmac.set_addr(MacAddr(manufacturer, id)))
+	else if(fmac.setAddr(MacAddr(manufacturer, id)))
 	{
 #ifdef FLARM
 		//note: for now we ignore the manufacturer
@@ -189,18 +189,39 @@ void Serial_Interface::fanet_cmd_addr(char *ch_str)
 	}
 }
 
-/* Config: #FNC type(0..7),onlinelogging(0..1) */
+/* Config: #FNC type(0..7),onlinelogging(0..1)[,groundType(0..F in hex)] */
 void Serial_Interface::fanet_cmd_config(char *ch_str)
 {
-#if defined(SerialDEBUG) && (SERIAL_debug_mode > 0)
-	SerialDEBUG.print(F("### Config "));
-	SerialDEBUG.print(ch_str);
+#if SERIAL_debug_mode > 0
+	printf("### Config %s", ch_str);
 #endif
+	/* remove \r\n and any spaces*/
+	char *ptr = strchr(ch_str, '\r');
+	if(ptr == NULL)
+		ptr = strchr(ch_str, '\n');
+	if(ptr != NULL)
+		*ptr = '\0';
+	while(*ch_str == ' ')
+		ch_str++;
+
+	if(strlen(ch_str) == 0)
+	{
+		/* report addr */
+		char buf[64];
+		snprintf(buf, sizeof(buf), "%s%c %X,%X,%X\n", FANET_CMD_START, CMD_CONFIG, app.aircraft, app.doOnlineTracking, app.state);
+		print(buf);
+		return;
+	}
+
 	/* config */
 	char *p = (char *)ch_str;
-	int type = strtol(p, NULL, 16);
+	App::aircraft_t type = static_cast<App::aircraft_t>(strtol(p, NULL, 16));
 	p = strchr(p, SEPARATOR)+1;
 	int logging = strtol(p, NULL, 16);
+
+	/* optional ground state */
+	if((p = strchr(p, SEPARATOR)) != nullptr)
+		app.state = static_cast<App::status_t>(strtol(++p, NULL, 16));
 
 	if(type < 0 || type > 7)
 	{
@@ -210,16 +231,51 @@ void Serial_Interface::fanet_cmd_config(char *ch_str)
 	{
 #ifdef FLARM
 		/* set FLARM type */
-		if(type == 1)					//paraglider
+		if(type == App::paraglider)
 			casw.set_aircraft_type(AT_SOFT_HG);
-		else if(type == 2)				//hangglider
+		else if(type == App::hangglider)
 			casw.set_aircraft_type(AT_FIXED_HG);
 #endif
 
 		/* set FANET type */
-		app.aircraft_type = type;
-		app.do_online_tracking = !!logging;
+		app.aircraft = type;
+		app.doOnlineTracking = !!logging;
 		print_line(FN_REPLY_OK);
+	}
+}
+
+/* Config: #FNM 0..1 */
+void Serial_Interface::fanet_cmd_mode(char *ch_str)
+{
+#if SERIAL_debug_mode > 0
+	printf("### Mode %s", ch_str);
+#endif
+	/* remove \r\n and any spaces*/
+	char *ptr = strchr(ch_str, '\r');
+	if(ptr == NULL)
+		ptr = strchr(ch_str, '\n');
+	if(ptr != NULL)
+		*ptr = '\0';
+	while(*ch_str == ' ')
+		ch_str++;
+
+	if(strlen(ch_str) == 0)
+	{
+		/* report addr */
+		char buf[64];
+		snprintf(buf, sizeof(buf), "%s%c %X\n", FANET_CMD_START, CMD_MODE, app.onGround);
+		print(buf);
+		return;
+	}
+
+	if(*ch_str == '0' || *ch_str == '1')
+	{
+		app.onGround = !!atoi(ch_str);
+		print_line(FN_REPLY_OK);
+	}
+	else
+	{
+		print_line(FN_REPLYE_INCOMPATIBLE_TYPE);
 	}
 }
 
@@ -227,26 +283,25 @@ void Serial_Interface::fanet_cmd_config(char *ch_str)
 //note: all in HEX
 void Serial_Interface::fanet_cmd_transmit(char *ch_str)
 {
-#if defined(SerialDEBUG) && (SERIAL_debug_mode > 0)
-	SerialDEBUG.print(F("### Packet "));
-	SerialDEBUG.print(ch_str);
+#if SERIAL_debug_mode > 0
+	printf("### Packet %s\n", ch_str);
 #endif
 
 	/* w/o an address we can not tx */
-	if(fmac.my_addr == MacAddr())
+	if(fmac.myAddr == MacAddr())
 	{
 		print_line(FN_REPLYE_NO_SRC_ADDR);
 		return;
 	}
 
 	/* no need to generate a package. tx queue is full */
-	if(!fmac.tx_queue_free())
+	if(!fmac.txQueueHasFreeSlots())
 	{
 		print_line(FN_REPLYE_TX_BUFF_FULL);
 		return;
 	}
 
-	Frame *frm = new Frame(fmac.my_addr);
+	Frame *frm = new Frame(fmac.myAddr);
 
 	/* header */
 	char *p = (char *)ch_str;
@@ -261,12 +316,12 @@ void Serial_Interface::fanet_cmd_transmit(char *ch_str)
 	/* ACK required */
 	if(strtol(p, NULL, 16))
 	{
-		frm->ack_requested = frm->forward?MAC_ACK_TWOHOP:MAC_ACK_SINGLEHOP;
+		frm->ack_requested = frm->forward?FRM_ACK_TWOHOP:FRM_ACK_SINGLEHOP;
 		frm->num_tx = MAC_TX_RETRANSMISSION_RETRYS;
 	}
 	else
 	{
-		frm->ack_requested = MAC_NOACK;
+		frm->ack_requested = FRM_NOACK;
 		frm->num_tx = 0;
 	}
 
@@ -327,6 +382,9 @@ void Serial_Interface::fanet_eval(char *str)
 		break;
 	case CMD_CONFIG:
 		fanet_cmd_config(&str[strlen(DONGLE_CMD_START) + 1]);
+		break;
+	case CMD_MODE:
+		fanet_cmd_mode(&str[strlen(DONGLE_CMD_START) + 1]);
 		break;
 	default:
 		print_line(FN_REPLYE_FN_UNKNOWN_CMD);
@@ -488,7 +546,7 @@ void Serial_Interface::bt_cmd_addr(char *ch_str)
 	SerialDEBUG.print(F("### BT id "));
 	SerialDEBUG.print(ch_str);
 #endif
-	if(fmac.my_addr.id != 0)
+	if(fmac.myAddr.id != 0)
 		print_line(FN_REPLYW_BT_RECONF_ID);
 
 	/* address */

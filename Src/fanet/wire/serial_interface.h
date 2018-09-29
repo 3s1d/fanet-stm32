@@ -54,6 +54,7 @@
 #define CMD_TRANSMIT			'T'
 #define CMD_ADDR			'A'
 #define CMD_CONFIG			'C'
+#define CMD_MODE			'M'
 
 #define CMD_RX_FRAME			"F"
 
@@ -108,7 +109,8 @@
  * Transmit: 		#FNT type,dest_manufacturer,dest_id,forward,ack_required,length,length*2hex[,signature]	note: all values in hex
  *
  * Address: 		#FNA manufacturer(hex),id(hex)								note: w/o address is returned
- * Config: 		#FNC type(0..7),onlinelogging(0..1)							note: type see protocol.txt
+ * Config: 		#FNC type(0..7),onlinelogging(0..1)[,groundType(0..F in hex)]				note: type see protocol.txt
+ * Mode:		#FNM 0..1										note: 0=flying(default), 1=ground
  *
  *
  * Receive a Frame:	#FNF src_manufacturer,src_id,broadcast,signature,type,payloadlength,payload
@@ -146,6 +148,7 @@ private:
 	void fanet_cmd_state(char *ch_str);
 	void fanet_cmd_addr(char *ch_str);
 	void fanet_cmd_config(char *ch_str);
+	void fanet_cmd_mode(char *ch_str);
 	void fanet_cmd_transmit(char *ch_str);
 
 	/* Dongle Commands */

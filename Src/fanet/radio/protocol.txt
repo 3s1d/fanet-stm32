@@ -29,7 +29,7 @@ Extended Header:
 			3: reserved
 5bit		Cast:
 			0: Broadcast (default)
-			1: Unicast (adds destination address (8+16bit)) (should only be forwarded if dest addr in cache and no 'better' retransmission heard so far)
+			1: Unicast (adds destination address (8+16bit)) (shall only be forwarded if dest addr in cache and no 'better' retransmission received)
 4bit 		Signature (if 1, add 4byte)
 3-0bit 		Reserved	(ideas: indicate multicast interest add 16bit addr, emergency)
 
@@ -133,7 +133,7 @@ Landmarks (Type = 5)
 
 [Byte 0]
 bit 7		TBD
-bit 4-6		Number of landmark feature (Required to replace old one. As e.g. the wind changed a feature may also change.)
+bit 4-6		Number of landmark feature (aka Tag) (Required to replace old one. As e.g. the wind changed a feature may also change.)
 bit 0-3		Subtype:
 			0:	  TBD		(maybe used to remove the feature?)
 			1:	  Text	
@@ -141,8 +141,11 @@ bit 0-3		Subtype:
 			3:	  Area
 			4:	  Circle
 			5:	  Filled circle
-			6:	  Position (absolute)
+			6:    3D Line						suitable for cables							
+			7:    3D Area						suitable for airspaces
+			8:    3D filled circle				suitable for airspcaes
 			6-14: TBD
+			15:	  Position (absolute)
 [Byte 1]
 bit 7-4		'Number of elements'-1=n (String in words n<=16 (max string -> 32byte), circles n<=6, others n<=8)
 bit 3-0		Layer:
@@ -151,12 +154,18 @@ bit 3-0		Layer:
 			2:	Keep out
 			3:	Touch down
 [n Elements]
-			Text (1): 					Position (4 Bytes compressed, see below, only once) + Chars (1 Byte)
+			Text (1): 					Position (4 Bytes compressed, see below, only once) + String (2 Byte aligned, zero-termination is optional)
 			Line (2): 					Position (4 Bytes compressed, see below, minimum 2 elements)
 			Area (3): 					Position (4 Bytes compressed, see below, minimum 3 elements)
-			Circle (4):					Position (4 Bytes compressed, see below) + Radius (in: ('1Byte' + 1) * 25m)
+			Circle (4):					Position (4 Bytes compressed, see below) + Radius (in: ('1Byte' + 1) * 25m) (0->25m, 1->50m, ...)
 			Filled Circle (5):			Position (4 Bytes compressed, see below) + Radius (in: ('1Byte' + 1) * 25m)
-			Reference Coordinates (15):	Position (6 byte absolute, see below, once only). Alternatively Type 4 position can be used.
+			3D Line (6):				n times: Position (4 Bytes compressed, see below) + Altitude (('1Byte'+107) * 20m) (-127->-400m, 127->4680m)
+			3D Area (7):				Altitude buttom, top (each: ('1Byte'+107) * 20m) (-127->-400m, 127->4680m, only once) + n times: 
+										Position (4 Bytes compressed, see below) + Radius (in: ('1Byte' + 1) * 25m) (0->25m, 1->50m, ...)
+			3D filled Circle (8):		Altitude buttom, top (each: ('1Byte'+107) * 20m) (-127->-400m, 127->4680m, only once) + n times:
+										Position (4 Bytes compressed, see below) + Radius (in: ('1Byte' + 1) * 25m)
+										
+			Reference Coordinates (15):	Position (6 byte absolute, see below, once only). Alternatively Type 4 position shall be used.
 
 ------------
 
@@ -188,11 +197,16 @@ bit 7-4		Type
 			0:    Other
 			1:    Walking
 			2:    Vehicle
-			4:    Need a ride
-			8:    Need help
-			15:   Emergency
+			3: 	  Bike
+			4:    Boot
+			8:    Need a ride
+			12:   Need technical support
+			13:	  Need medical help
+			14:   Distress call
+			15:   Distress call automatical
 			Rest: TBD
-bit 3-0		TBD
+bit 3-1		TBD
+bit 0		Online Tracking
 
 ------------
 

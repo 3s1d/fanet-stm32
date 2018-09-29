@@ -50,6 +50,8 @@
 #include "fanet/radio/sx1272.h"
 #include "serial.h"
 
+//  ../bootloader/xload-imgbuilder/Release/xload-imgbuilder Release/fanet.elf 5 dongle
+
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
