@@ -28,9 +28,11 @@
 
 /* Fanet Commands */
 
-/* State: #FNS lat(deg),lon(deg),alt(m),speed(km/h),climb(m/s),heading(deg)[,year(since 1900),month(0-11),day,hour,min,sec,turn(deg/s)] */
+/*
+ *State: #FNS lat(deg),lon(deg),alt(m MSL),speed(km/h),climb(m/s),heading(deg)[,year(since 1900),month(0-11),day,hour,min,sec,sep(m),turn(deg/s)]
+ */
 //note: all values in float/dec (NOT hex)
-//note: FLARM requires a precise time stamp
+//note: FLARM requires a precise time stamp as well as WGS84 height
 void Serial_Interface::fanet_cmd_state(char *ch_str)
 {
 #if defined(SerialDEBUG) && (SERIAL_debug_mode > 0)
@@ -97,8 +99,16 @@ void Serial_Interface::fanet_cmd_state(char *ch_str)
 	if(p)
 		t.tm_sec = atoi(++p);
 
-	float turn = NAN;
+	/* Geoid separation */
+	float sep = NAN;
 	p = strchr(p, SEPARATOR);
+	if(p)
+		sep = atof(++p);
+
+	/* turn */
+	float turn = NAN;
+	if(p)				//we got  sep -> continoue
+		p = strchr(p, SEPARATOR);
 	if(p)
 		turn = atof(++p);
 
@@ -111,7 +121,7 @@ void Serial_Interface::fanet_cmd_state(char *ch_str)
 	app.set(lat, lon, alt, speed, climb, heading, turn);
 
 #ifdef FLARM
-	casw.update_position(lat, lon, alt, speed, climb, heading, &t);
+	casw.update_position(lat, lon, alt+sep, speed, climb, heading, &t);
 #else
 	if(t.tm_sec)
 	{
