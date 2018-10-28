@@ -271,6 +271,7 @@ List on the channel if the id is already used.
 Manufacturer IDs:
 0x00		[reserved]
 0x01		Skytraxx
+0x03		BitBroker.eu
 0x04		AirWhere
 0x05		Windline
 0x06		Burnair.ch
