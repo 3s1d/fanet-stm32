@@ -118,7 +118,8 @@ bit 6		Temperature (+1byte in 0.5 degree, 2-Complement)
 bit 5		Wind (+3byte: 1byte Heading in 360/256 degree, 1byte speed and 1byte gusts in 0.2km/h (each: bit 7 scale 5x or 1x, bit 0-6))
 bit 4		Humidity (+1byte: in 0.4% (%rh*10/4))
 bit 3		Barometric pressure (+2byte: in 1Pa, offseted by 430hPa, unsigned little endian (hPa-430)*100)
-bit 1-2		TBD
+bit 2		TBD
+bit 1		Battery Voltage (+1byte in 0.05 Volt, offseted by 2.5V, unsigned (Volt-2.5)*20)
 bit 0		Extended Header (+1byte) (TBD, it may indicate the number of available landmarks) 
 		The following is only mandatory if no additional data will be added. Broadcasting only the gateway flag doesn't require pos information. 
 [Byte 1-3 or Byte 2-4]	Position	(Little Endian, 2-Complement)		
