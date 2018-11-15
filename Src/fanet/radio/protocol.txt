@@ -113,11 +113,11 @@ bit 0-7 	Subheader, Subtype (TBD)
 Service (Type = 4)
 
 [Byte 0]	Header	(additional payload will be added in order 6 to 1, followed by Extended Header 7 to 0)
-bit 7		Internet Gateway (no additional payload required)
+bit 7		Internet Gateway (no additional payload required, other than a position)
 bit 6		Temperature (+1byte in 0.5 degree, 2-Complement)
 bit 5		Wind (+3byte: 1byte Heading in 360/256 degree, 1byte speed and 1byte gusts in 0.2km/h (each: bit 7 scale 5x or 1x, bit 0-6))
 bit 4		Humidity (+1byte: in 0.4% (%rh*10/4))
-bit 3		Barometric pressure (+2byte: in 1Pa, offseted by 430hPa, unsigned little endian (hPa-430)*100)
+bit 3		Barometric pressure (+2byte: in 10Pa, offset by 430hPa, unsigned little endian (hPa-430)*10)
 bit 1-2		TBD
 bit 0		Extended Header (+1byte) (TBD, it may indicate the number of available landmarks) 
 		The following is only mandatory if no additional data will be added. Broadcasting only the gateway flag doesn't require pos information. 
@@ -135,15 +135,15 @@ Landmarks (Type = 5)
 bit 7		TBD
 bit 4-6		Number of landmark feature (aka Tag) (Required to replace old one. As e.g. the wind changed a feature may also change.)
 bit 0-3		Subtype:
-			0:	  TBD		(maybe used to remove the feature?)
-			1:	  Text	
-			2:	  Line
-			3:	  Area
-			4:	  Circle
-			5:	  Filled circle
-			6:    3D Line						suitable for cables							
-			7:    3D Area						suitable for airspaces
-			8:    3D filled circle				suitable for airspcaes
+			0:    TBD				(maybe used to remove the feature?)
+			1:    Text	
+			2:    Line
+			3:    Area
+			4:    Circle
+			5:    Filled circle
+			6:    3D Line				suitable for cables							
+			7:    3D Area				suitable for airspaces
+			8:    3D filled circle			suitable for airspaces
 			6-14: TBD
 			15:	  Position (absolute)
 [Byte 1]
@@ -154,39 +154,39 @@ bit 3-0		Layer:
 			2:	Keep out
 			3:	Touch down
 [n Elements]
-			Text (1): 					Position (4 Bytes compressed, see below, only once) + String (2 Byte aligned, zero-termination is optional)
-			Line (2): 					Position (4 Bytes compressed, see below, minimum 2 elements)
-			Area (3): 					Position (4 Bytes compressed, see below, minimum 3 elements)
-			Circle (4):					Position (4 Bytes compressed, see below) + Radius (in: ('1Byte' + 1) * 25m) (0->25m, 1->50m, ...)
+			Text (1): 				Position (4 Bytes compressed, see below, only once) + String (2 Byte aligned, zero-termination is optional)
+			Line (2): 				Position (4 Bytes compressed, see below, minimum 2 elements)
+			Area (3): 				Position (4 Bytes compressed, see below, minimum 3 elements)
+			Circle (4):				Position (4 Bytes compressed, see below) + Radius (in: ('1Byte' + 1) * 25m) (0->25m, 1->50m, ...)
 			Filled Circle (5):			Position (4 Bytes compressed, see below) + Radius (in: ('1Byte' + 1) * 25m)
 			3D Line (6):				n times: Position (4 Bytes compressed, see below) + Altitude (('1Byte'+107) * 20m) (-127->-400m, 127->4680m)
-			3D Area (7):				Altitude buttom, top (each: ('1Byte'+107) * 20m) (-127->-400m, 127->4680m, only once) + n times: 
+			3D Area (7):				Altitude bottom, top (each: ('1Byte'+107) * 20m) (-127->-400m, 127->4680m, only once) + n times: 
 										Position (4 Bytes compressed, see below) + Radius (in: ('1Byte' + 1) * 25m) (0->25m, 1->50m, ...)
-			3D filled Circle (8):		Altitude buttom, top (each: ('1Byte'+107) * 20m) (-127->-400m, 127->4680m, only once) + n times:
+			3D filled Circle (8):			Altitude bottom, top (each: ('1Byte'+107) * 20m) (-127->-400m, 127->4680m, only once) + n times:
 										Position (4 Bytes compressed, see below) + Radius (in: ('1Byte' + 1) * 25m)
 										
-			Reference Coordinates (15):	Position (6 byte absolute, see below, once only). Alternatively Type 4 position shall be used.
+			Reference Coordinates (15):		Position (6 byte absolute, see below, once only). Alternatively Type 4 position shall be used.
 
 ------------
 
 Remote Configuration (Type = 6)
 Note 1: Signature (symmetric) is highly recommended
 Note 2: In order to indicate a successful configuration the receiver shall transmit the configured feature instantaneously.
+Note 3: Each reply feature with a suitable mask shall be played using round robin w/ 20sec intervals followed by a 3min pause.
+Note 4: Skytraxx 3.0 silently assumes that Remote Configuration is available is if a Service from the same address is present.
 
 [Byte 0]
 bit 7-0		Subtype:
-			0:		 Acknowledge configuration: Byte [1] subtype of ack
-			1:		 Request / Advertise configurable ... TODO
-			2:		 Position. Byte [1-6] latitude/longitude, Byte [7-8] altitude, Byte [9] heading (encoded like in type 1)
-			3: 		 Reply feature (recommended for name). Byte [1] is type (and forward bit) followed by the payload.
-			4 .. 7:	 Reply feature. Byte [1] is type (and forward bit) followed by the payload.
-			8 .. 15: Reply feature (recommended for landmark slots 0 .. 7). Byte [1] is type (and forward bit) followed by the payload. 
-				A feature with no further payload is considered to be removed.
-
+			0:	 Acknowledge configuration: Byte [1] subtype of ack
+			1:	 Request / Advertise configurable ... TODO
+			2:	 Position. Byte [1-6] latitude/longitude, Byte [7-8] altitude, Byte [9] heading (encoded like in type 1)
+			3 .. 15: Broadcast Reply feature. Byte [1] is type (and forward bit) followed by its payload.
+				 Recommendation: 3 for name. 8..15 for landmark 0..7
+TODO: Wind dependent feature overwrite! add 8x13 slots per wind direction?
 ------------
 
 Ground Tracking (Type = 7)
-[recommended intervall: floor((#neighbors/10 + 1) * 5s) ]
+[recommended interval: floor((#neighbors/10 + 1) * 5s) ]
 
 [Byte 0-2]	Position	(Little Endian, 2-Complement)
 bit 0-23	Latitude 	(Absolute, see below)
@@ -201,9 +201,9 @@ bit 7-4		Type
 			4:    Boot
 			8:    Need a ride
 			12:   Need technical support
-			13:	  Need medical help
+			13:   Need medical help
 			14:   Distress call
-			15:   Distress call automatical
+			15:   Distress call automatically
 			Rest: TBD
 bit 3-1		TBD
 bit 0		Online Tracking
@@ -275,6 +275,7 @@ Manufacturer IDs:
 0x04		AirWhere
 0x05		Windline
 0x06		Burnair.ch
+0x07		SoftRF
 0x11		Skytraxx+FLARM, FANET+
 ...
 0xFC		Unregistered Devices
