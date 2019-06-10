@@ -117,11 +117,11 @@ bit 7		Internet Gateway (no additional payload required, other than a position)
 bit 6		Temperature (+1byte in 0.5 degree, 2-Complement)
 bit 5		Wind (+3byte: 1byte Heading in 360/256 degree, 1byte speed and 1byte gusts in 0.2km/h (each: bit 7 scale 5x or 1x, bit 0-6))
 bit 4		Humidity (+1byte: in 0.4% (%rh*10/4))
-bit 3		Barometric pressure (+2byte: in 10Pa, offset by 430hPa, unsigned little endian (hPa-430)*10)
-bit 2		TBD
-bit 1		State of Charge  (+1byte lower 4 bits: 0x00 = 0%, 0x01 = 6.25%, .. 0x0F = 100%)
+bit 3		Barometric pressure normailized (+2byte: in 10Pa, offset by 430hPa, unsigned little endian (hPa-430)*10)
+bit 2		Support for Remote Configuration (Advertisement)
+bit 1		State of Charge  (+1byte lower 4 bits: 0x00 = 0%, 0x01 = 6.666%, .. 0x0F = 100%)
 bit 0		Extended Header (+1byte directly after byte 0) (TBD, it may indicate the number of available landmarks) 
-		The following is only mandatory if no additional data will be added. Broadcasting only the gateway flag doesn't require pos information. 
+		The following is only mandatory if no additional data will be added. Broadcasting only the gateway/remote-cfg flag doesn't require pos information. 
 [Byte 1-3 or Byte 2-4]	Position	(Little Endian, 2-Complement)		
 bit 0-23	Latitude	(Absolute, see below)
 [Byte 4-6 or Byte 5-7]	Position	(Little Endian, 2-Complement)
@@ -131,46 +131,47 @@ bit 0-23	Longitude   (Absolute, see below)
 ------------
 
 Landmarks (Type = 5)
+Note: Landmarks are completely independent. Thus the first coordinate in each packet has to be an absolute one. All others are in relation to this and therefore compressed. 
+Note2: Identification/detection shall be done by hashing the whole payload, excluding bytes 0 and 1. That way one quietly can change the layer to 'Don't care' and quickly 
+	destroy the landmark w/o having to wait for it's relative live span to be exceeded. 
 
 [Byte 0]
-bit 7		TBD
-bit 4-6		Number of landmark feature (aka Tag) (Required to replace old one. As e.g. the wind changed a feature may also change.)
+bit 4-7		Time to live +1 in 10min (bit 7 scale 6x or 1x, bit 4-6) (0->10min, 1->20min, ..., F->8h)
 bit 0-3		Subtype:
-			0:    TBD				(maybe used to remove the feature?)
-			1:    Text	
-			2:    Line
-			3:    Area
-			4:    Circle
-			5:    Filled circle
-			6:    3D Line				suitable for cables							
-			7:    3D Area				suitable for airspaces
-			8:    3D filled circle			suitable for airspaces
-			6-14: TBD
-			15:	  Position (absolute)
+			0:     Text	
+			1:     Line
+			2:     Arrow
+			3:     Area
+			4:     Area Filled
+			5:     Circle
+			6:     Circle Filled
+			7:     3D Line		suitable for cables							
+			8:     3D Area		suitable for airspaces (filled if starts from GND=0)
+			9:     3D Cylinder	suitable for airspaces (filled if starts from GND=0)
+			10-15: TBD
 [Byte 1]
-bit 7-4		'Number of elements'-1=n (String in words n<=16 (max string -> 32byte), circles n<=6, others n<=8)
+bit 7-4		'Number of elements'-1=n (String in words -> max string 32chars), circles n<=6, others n<=8)
 bit 3-0		Layer:
-			0:	Info
-			1:	Warning
-			2:	Keep out
-			3:	Touch down
+			0:     Info
+			1:     Warning
+			2:     Keep out
+			3:     Touch down
+			4-14:  TBD
+			15:    Don't care
 [n Elements]
-			Text (1): 				Position (4 Bytes compressed, see below, only once) + String (2 Byte aligned, zero-termination is optional)
-			Line (2): 				Position (4 Bytes compressed, see below, minimum 2 elements)
-			Area (3): 				Position (4 Bytes compressed, see below, minimum 3 elements)
-			Circle (4):				Position (4 Bytes compressed, see below) + Radius (in: ('1Byte' + 1) * 25m) (0->25m, 1->50m, ...)
-			Filled Circle (5):			Position (4 Bytes compressed, see below) + Radius (in: ('1Byte' + 1) * 25m)
-			3D Line (6):				n times: Position (4 Bytes compressed, see below) + Altitude (('1Byte'+107) * 20m) (-127->-400m, 127->4680m)
-			3D Area (7):				Altitude bottom, top (each: ('1Byte'+107) * 20m) (-127->-400m, 127->4680m, only once) + n times: 
-										Position (4 Bytes compressed, see below) + Radius (in: ('1Byte' + 1) * 25m) (0->25m, 1->50m, ...)
-			3D filled Circle (8):			Altitude bottom, top (each: ('1Byte'+107) * 20m) (-127->-400m, 127->4680m, only once) + n times:
-										Position (4 Bytes compressed, see below) + Radius (in: ('1Byte' + 1) * 25m)
-										
-			Reference Coordinates (15):		Position (6 byte absolute, see below, once only). Alternatively Type 4 position shall be used.
+			Text (0): 		Position (Absolute) + String (2 Byte aligned, zero-termination is optional)
+			Line/Arrow (1,2):	Position (1st absolute others compressed, see below, minimum 2 elements)
+			Area (filled)(3,4): 	Position (1st absolute others compressed, see below, minimum 3 elements)
+			Circle (filled)(5,6):	Position (1st absolute others compressed, see below) + Radius (in: ('1Byte' + 1) * 50m) (0->50m, 1->100m, ...)
+			3D Line (7):		n times: Position (1st in packet absolute others compressed, see below) + Altitude (('1Byte'+107) * 20m) (-127->-400m, 127->4680m)
+			3D Area (8):		Altitude bottom, top (each: ('1Byte'+107) * 20m) (-127->-400m, 127->4680m, only once) + n times: 
+							Position (1st absolute others compressed, see below)
+			3D Cylinder (9):	Altitude bottom, top (each: ('1Byte'+107) * 20m) (-127->-400m, 127->4680m, only once) + n times:
+							Position (1st absolute others compressed, see below) + Radius (in: ('1Byte' + 1) * 50m)
 
 ------------
 
-Remote Configuration (Type = 6)
+Remote Configuration (Type = 6)		NOTE: Do not use, in development!
 Note 1: Signature (symmetric) is highly recommended
 Note 2: In order to indicate a successful configuration the receiver shall transmit the configured feature instantaneously.
 Note 3: Each reply feature with a suitable mask shall be played using round robin w/ 20sec intervals followed by a 3min pause.
@@ -186,7 +187,7 @@ bit 7-0		Subtype:
 TODO: Wind dependent feature overwrite! add 8x13 slots per wind direction?
 ------------
 
-Ground Tracking (Type = 7)
+Ground Tracking (Type = 7)		NOTE: Do not use, in development!
 [recommended interval: floor((#neighbors/10 + 1) * 5s) ]
 
 [Byte 0-2]	Position	(Little Endian, 2-Complement)
@@ -198,9 +199,10 @@ bit 7-4		Type
 			0:    Other
 			1:    Walking
 			2:    Vehicle
-			3: 	  Bike
+			3:    Bike
 			4:    Boot
 			8:    Need a ride
+			9:    Landed well
 			12:   Need technical support
 			13:   Need medical help
 			14:   Distress call
