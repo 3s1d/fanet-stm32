@@ -187,7 +187,7 @@ bit 7-0		Subtype:
 TODO: Wind dependent feature overwrite! add 8x13 slots per wind direction?
 ------------
 
-Ground Tracking (Type = 7)		NOTE: Do not use, in development!
+Ground Tracking (Type = 7)
 [recommended interval: floor((#neighbors/10 + 1) * 5s) ]
 
 [Byte 0-2]	Position	(Little Endian, 2-Complement)
