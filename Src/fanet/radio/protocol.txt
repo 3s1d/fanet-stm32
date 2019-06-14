@@ -150,7 +150,7 @@ bit 0-3		Subtype:
 			9:     3D Cylinder	suitable for airspaces (filled if starts from GND=0)
 			10-15: TBD
 [Byte 1]
-bit 7-4		'Number of elements'-1=n (String in words -> max string 32chars), circles n<=6, others n<=8)
+bit 7-4		TBD?		//unneeded 'Number of elements'-1=n (String in words -> max string 32chars), circles n<=6, others n<=8)
 bit 3-0		Layer:
 			0:     Info
 			1:     Warning
@@ -159,7 +159,7 @@ bit 3-0		Layer:
 			4-14:  TBD
 			15:    Don't care
 [n Elements]
-			Text (0): 		Position (Absolute) + String (2 Byte aligned, zero-termination is optional)
+			Text (0): 		Position (Absolute) + String 				//(2 Byte aligned, zero-termination is optional)
 			Line/Arrow (1,2):	Position (1st absolute others compressed, see below, minimum 2 elements)
 			Area (filled)(3,4): 	Position (1st absolute others compressed, see below, minimum 3 elements)
 			Circle (filled)(5,6):	Position (1st absolute others compressed, see below) + Radius (in: ('1Byte' + 1) * 50m) (0->50m, 1->100m, ...)
