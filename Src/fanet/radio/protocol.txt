@@ -130,7 +130,7 @@ bit 0-23	Longitude   (Absolute, see below)
 
 ------------
 
-Landmarks (Type = 5)
+Landmarks (Type = 5) (under development)
 Note: Landmarks are completely independent. Thus the first coordinate in each packet has to be an absolute one. All others are in relation to this and therefore compressed. 
 Note2: Identification/detection shall be done by hashing the whole payload, excluding bytes 0 and 1. That way one quietly can change the layer to 'Don't care' and quickly 
 	destroy the landmark w/o having to wait for it's relative live span to be exceeded. 
@@ -150,7 +150,7 @@ bit 0-3		Subtype:
 			9:     3D Cylinder	suitable for airspaces (filled if starts from GND=0)
 			10-15: TBD
 [Byte 1]
-bit 7-4		TBD?		//unneeded 'Number of elements'-1=n (String in words -> max string 32chars), circles n<=6, others n<=8)
+bit 7-4		TBD?		//unneeded, length well defined via payload length. 'Number of elements'-1=n (String in words -> max string 32chars), circles n<=6, others n<=8)
 bit 3-0		Layer:
 			0:     Info
 			1:     Warning
@@ -166,7 +166,7 @@ bit 3-0		Layer:
 			3D Line (7):		n times: Position (1st in packet absolute others compressed, see below) + Altitude (('1Byte'+107) * 20m) (-127->-400m, 127->4680m)
 			3D Area (8):		Altitude bottom, top (each: ('1Byte'+107) * 20m) (-127->-400m, 127->4680m, only once) + n times: 
 							Position (1st absolute others compressed, see below)
-			3D Cylinder (9):	Altitude bottom, top (each: ('1Byte'+107) * 20m) (-127->-400m, 127->4680m, only once) + n times:
+			3D Cylinder (9):	n times: Altitude bottom, top (each: ('1Byte'+107) * 20m) (-127->-400m, 127->4680m, only once) + 
 							Position (1st absolute others compressed, see below) + Radius (in: ('1Byte' + 1) * 50m)
 
 ------------
