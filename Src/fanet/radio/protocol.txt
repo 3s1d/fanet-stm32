@@ -134,6 +134,7 @@ Landmarks (Type = 5) (under development)
 Note: Landmarks are completely independent. Thus the first coordinate in each packet has to be an absolute one. All others are in relation to this and therefore compressed. 
 Note2: Identification/detection shall be done by hashing the whole payload, excluding bytes 0 and 1. That way one quietly can change the layer to 'Don't care' and quickly 
 	destroy the landmark w/o having to wait for it's relative live span to be exceeded. 
+Note3: In case a text has the same postion as the first position of any other landmark form then the text is considered to be the form's label.
 
 [Byte 0]
 bit 4-7		Time to live +1 in 10min (bit 7 scale 6x or 1x, bit 4-6) (0->10min, 1->20min, ..., F->8h)
@@ -233,6 +234,46 @@ bit 0-15	Longitude
 			longitude@latitude=60deg: 55km, longitude@latitude=70deg: 38km (critical)) 
 			(Max error <2m)
 			(Note: longitude block-bit could be extended by a further bit in case of lat > +/-60deg, future work...)
+			
+Sample C code for decompressing:
+float fns_buf2coord_compressed(uint16_t *buf, float mycoord)
+{
+	/* decode buffer */
+	bool odd = !!((1<<15) & *buf);
+	int16_t sub_deg_int = (*buf&0x7FFF) | (1<<14&*buf)<<1;
+	const float sub_deg = sub_deg_int / 32767.0f;
+
+
+	/* retrieve coordinate */
+	float mycood_rounded = roundf(mycoord);
+	bool mycoord_isodd = ((int)mycood_rounded) & 1;
+
+	/* target outside our segment. estimate where it is in */
+	if(mycoord_isodd != odd)
+	{
+		/* adjust deg segment */
+		const float mysub_deg = mycoord - mycood_rounded;
+		if(sub_deg > mysub_deg)
+			mycood_rounded--;
+		else
+			mycood_rounded++;
+	}
+
+	return mycood_rounded + sub_deg;
+}
+
+Sample C code for compressing (note: byte order in stream is low to high):
+uint16_t fns_coord2buf_compressed(float ref_deg)
+{
+	const float deg_round = roundf(ref_deg);
+	const bool deg_odd = ((int)deg_round) & 1;
+	const float decimal = ref_deg - deg_round;
+	int dec_int = (int)(decimal*32767.0f);
+	clamp(dec_int, -16383, 16383);
+
+	return ((dec_int&0x7FFF) | (!!deg_odd<<15));
+}
+			
 
 Absolute:
 [Byte 0-2]	Position	(Little Endian, 2-Complement)
