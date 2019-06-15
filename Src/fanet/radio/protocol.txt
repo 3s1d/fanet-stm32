@@ -165,10 +165,10 @@ bit 3-0		Layer:
 			Area (filled)(3,4): 	Position (1st absolute others compressed, see below, minimum 3 elements)
 			Circle (filled)(5,6):	n times: Position (1st absolute others compressed, see below) + Radius (1Byte in 50m, bit 7 scale 8x or 1x, bit 0-6)
 			3D Line (7):		n times: Position (1st in packet absolute others compressed, see below) + Altitude (('1Byte signed'+107) * 20m) (-127->-400m, 127->4680m)
-			3D Area (8):		Altitude bottom, top (each: ('1Byte signed'+107) * 20m) (-127->-400m, 127->4680m, only once) + n times: 
-							Position (1st absolute others compressed, see below)
-			3D Cylinder (9):	n times: Altitude bottom, top (each: ('1Byte'+107) * 20m) (-127->-400m, 127->4680m, only once) + 
-							Position (1st absolute others compressed, see below) + Radius (1Byte in 50m, bit 7 scale 8x or 1x, bit 0-6)
+			3D Area (8):		Altitude bottom, top (each: ('1Byte signed'+107) * 20m) (-127->-400m, 127->4680m, only once) + 
+							n times: Position (1st absolute others compressed, see below)
+			3D Cylinder (9):	n times: Position (1st absolute others compressed, see below) + Radius (1Byte in 50m, bit 7 scale 8x or 1x, bit 0-6) +
+							Altitude bottom, top (each: ('1Byte'+107) * 20m) (-127->-400m, 127->4680m, only once)
 
 ------------
 
