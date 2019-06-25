@@ -151,7 +151,8 @@ bit 0-3		Subtype:
 			9:     3D Cylinder	suitable for airspaces (filled if starts from GND=0)
 			10-15: TBD
 [Byte 1]
-bit 7-4		TBD?		//unneeded, length well defined via payload length. 'Number of elements'-1=n (String in words -> max string 32chars), circles n<=6, others n<=8)
+bit 7-5		Reserved
+bit 4		Internal wind dependency (+1byte wind sector)
 bit 3-0		Layer:
 			0:     Info
 			1:     Warning
@@ -159,6 +160,16 @@ bit 3-0		Layer:
 			3:     Touch down
 			4-14:  TBD
 			15:    Don't care
+[Byte 2 only if internal wind bit is set] Wind sectors +/-22.5degree (only display landmark if internal wind is within one of the advertised sectors)
+bit 7 		NW
+bit 6		W
+bit 5		SW
+bit 4 		S
+bit 3 		SE
+bit 2 		E
+bit 1 		NE
+bit 0 		N
+
 [n Elements]
 			Text (0): 		Position (Absolute) + String 				//(2 Byte aligned, zero-termination is optional)
 			Line/Arrow (1,2):	Position (1st absolute others compressed, see below, minimum 2 elements)
