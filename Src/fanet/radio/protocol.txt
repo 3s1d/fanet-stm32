@@ -132,7 +132,7 @@ bit 0-23	Longitude   (Absolute, see below)
 
 Landmarks (Type = 5) (under development)
 Note: Landmarks are completely independent. Thus the first coordinate in each packet has to be an absolute one. All others are in relation to this and therefore compressed. 
-Note2: Identification/detection shall be done by hashing the whole payload, excluding bytes 0 and 1. That way one quietly can change the layer to 'Don't care' and quickly 
+Note2: Identification/detection shall be done by hashing the whole payload, excluding bytes 0, 1 and, 2 (optional). That way one quietly can change the layer to 'Don't care' and quickly 
 	destroy the landmark w/o having to wait for it's relative live span to be exceeded. 
 Note3: In case a text has the same postion as the first position of any other landmark form then the text is considered to be the form's label.
 
@@ -160,7 +160,8 @@ bit 3-0		Layer:
 			3:     Touch down
 			4-14:  TBD
 			15:    Don't care
-[Byte 2 only if internal wind bit is set] Wind sectors +/-22.5degree (only display landmark if internal wind is within one of the advertised sectors)
+[Byte 2 only if internal wind bit is set] Wind sectors +/-22.5degree (only display landmark if internal wind is within one of the advertised sectors. 
+									If byte 2 is present but is zero, landmark gets only displayed in case of no wind)
 bit 7 		NW
 bit 6		W
 bit 5		SW
