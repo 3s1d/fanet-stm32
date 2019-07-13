@@ -165,7 +165,7 @@ private:
 	bool isNeighbor(MacAddr addr);
 
 public:
-	bool doforward = true;
+	bool doForward = true;
 
 	FanetMac() : myTimer(MAC_SLOT_MS, stateWrapper), myAddr(_myAddr) { }
 	~FanetMac() { }

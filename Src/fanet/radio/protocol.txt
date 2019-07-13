@@ -185,19 +185,21 @@ bit 0 		N
 ------------
 
 Remote Configuration (Type = 6)		NOTE: Do not use, in development!
-Note 1: Signature (symmetric) is highly recommended
-Note 2: In order to indicate a successful configuration the receiver shall transmit the configured feature instantaneously.
-Note 3: Each reply feature with a suitable mask shall be played using round robin w/ 20sec intervals followed by a 3min pause.
-Note 4: Skytraxx 3.0 silently assumes that Remote Configuration is available is if a Service from the same address is present.
+Note: Signature (symmetric) is highly recommended. Skytraxx uses last 4byte of SHA1 + PSK
+Note 2: Each reply feature with a suitable mask shall be played using round robin w/ 30sec intervals followed by a 3min pause.
+Note 3: Empty subtype removes the feature
 
 [Byte 0]
 bit 7-0		Subtype:
-			0:	 Acknowledge configuration: Byte [1] subtype of ack
-			1:	 Request / Advertise configurable ... TODO
-			2:	 Position. Byte [1-6] latitude/longitude, Byte [7-8] altitude, Byte [9] heading (encoded like in type 1)
-			3 .. 15: Broadcast Reply feature. Byte [1] is type (and forward bit) followed by its payload.
-				 Recommendation: 3 for name. 8..15 for landmark 0..7
-TODO: Wind dependent feature overwrite! add 8x13 slots per wind direction?
+			0:	Acknowledge configuration: Byte [1] subtype of ack
+			1:	Request. Byte[1] Subtype
+			2:	Position. Byte [1-6] latitude/longitude, Byte [7] altitude ('1Byte signed'+109) * 25m (-127->-450m, 127->5900m), Byte [9] heading (encoded like in type 1)
+			3:	Reserved
+			4..8:	Geofence for Geo-Forwarding: Altitude bottom, top (each: ('1Byte signed'+109) * 25m (-127->-450m, 127->5900m), only once) + 
+							n times: Position (1st absolute others compressed, see below)
+			9..21:	Broadcast Reply feature. Byte[1] Wind Sectors (like in type 5), Byte [2] is type (and forward bit) followed by its payload.
+				Recommendation: 9 for name.
+
 ------------
 
 Ground Tracking (Type = 7)

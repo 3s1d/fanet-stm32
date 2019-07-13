@@ -358,7 +358,7 @@ void FanetMac::handleRx()
 		}
 
 		/* Forward frame */
-		if (doforward && frm->forward && tx_fifo.size() < MAC_FIFO_SIZE - 3 && frm->rssi <= MAC_FORWARD_MAX_RSSI_DBM
+		if (doForward && frm->forward && tx_fifo.size() < MAC_FIFO_SIZE - 3 && frm->rssi <= MAC_FORWARD_MAX_RSSI_DBM
 				&& (frm->dest == MacAddr() || isNeighbor(frm->dest)) && sx1272_get_airlimit() < 0.5f)
 		{
 #if MAC_debug_mode >= 2
