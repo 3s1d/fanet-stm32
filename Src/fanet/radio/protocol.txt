@@ -31,7 +31,8 @@ Extended Header:
 			0: Broadcast (default)
 			1: Unicast (adds destination address (8+16bit)) (shall only be forwarded if dest addr in cache and no 'better' retransmission received)
 4bit 		Signature (if 1, add 4byte)
-3-0bit 		Reserved	(ideas: indicate multicast interest add 16bit addr, emergency)
+3bit		Geo-based Forwarded	(prevent any further geo-based forwarding, can be ignored by any none-forwarding instances)
+2-0bit 		Reserved	(ideas: indicate multicast interest add 16bit addr, emergency)
 
 Destination Address (if unicast is set):
 [Byte 5-7]
@@ -185,7 +186,7 @@ bit 0 		N
 ------------
 
 Remote Configuration (Type = 6)		NOTE: Do not use, in development!
-Note: Signature (symmetric) is highly recommended. Skytraxx uses last 4byte of SHA1 + PSK
+Note: Signature (symmetric) is highly recommended. Skytraxx uses first 4byte of SHA1 + PSK
 Note 2: Each reply feature with a suitable mask shall be played using round robin w/ 30sec intervals followed by a 3min pause.
 Note 3: Empty subtype removes the feature
 
@@ -193,7 +194,7 @@ Note 3: Empty subtype removes the feature
 bit 7-0		Subtype:
 			0:	Acknowledge configuration: Byte [1] subtype of ack
 			1:	Request. Byte[1] Subtype
-			2:	Position. Byte [1-6] latitude/longitude, Byte [7] altitude ('1Byte signed'+109) * 25m (-127->-450m, 127->5900m), Byte [9] heading (encoded like in type 1)
+			2:	Position. Byte [1-6] latitude/longitude, Byte [7] altitude ('1Byte signed'+109) * 25m (-127->-450m, 127->5900m), Byte [8] heading (encoded like in type 1)
 			3:	Reserved
 			4..8:	Geofence for Geo-Forwarding: Altitude bottom, top (each: ('1Byte signed'+109) * 25m (-127->-450m, 127->5900m), only once) + 
 							n times: Position (1st absolute others compressed, see below)
