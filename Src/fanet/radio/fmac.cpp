@@ -369,6 +369,7 @@ void FanetMac::handleRx()
 
 			/* generate new tx time */
 			frm->next_tx = HAL_GetTick() + random(MAC_FORWARD_DELAY_MIN, MAC_FORWARD_DELAY_MAX);
+			frm->num_tx = !!frm->ack_requested;
 
 			/* add to list */
 			tx_fifo.add(frm);
@@ -421,7 +422,7 @@ void FanetMac::handleTx()
 
 		/* get a frame from the fifo */
 		frm = tx_fifo.get_nexttx();
-		if (frm == NULL)
+		if (frm == nullptr)
 			return;
 
 		/* frame w/o a received ack and no more re-transmissions left */
@@ -430,7 +431,7 @@ void FanetMac::handleTx()
 #if MAC_debug_mode > 0
 			printf("### Frame, 0x%02X NACK!\n", frm->type);
 #endif
-			if (myApp != NULL)
+			if (myApp != nullptr && frm->src == myAddr)
 				myApp->handle_acked(false, frm->dest);
 			tx_fifo.remove_delete(frm);
 			return;
@@ -501,7 +502,7 @@ void FanetMac::handleTx()
 			/* fifo tx */
 
 			/* transmission successful */
-			if (!frm->ack_requested)
+			if (!frm->ack_requested || frm->src != myAddr)
 			{
 				/* remove frame from FIFO */
 				tx_fifo.remove_delete(frm);
