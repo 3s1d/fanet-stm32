@@ -104,7 +104,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		return;
 
 	if (GPIO_Pin == SXDIO0_EXTI8_Pin)
-		sx1272_irq();
+		fanet_sx_int();
 
 	if (GPIO_Pin == GPIO_PPS_EXTI0_Pin)
 		fanet_pps_int();

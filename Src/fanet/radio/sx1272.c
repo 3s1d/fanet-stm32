@@ -27,22 +27,6 @@ float sx_airtime = 0.0f;
 uint8_t sx_reg_backup[2][111];
 #endif
 
-//1% too slow, for 24Mhz
-void delay_us(const int us)
-{
-	uint32_t i = us * 2;
-	while (i-- > 0)
-	{
-		__NOP();
-		__NOP();
-		__NOP();
-		__NOP();
-		__NOP();
-		__NOP();
-		__NOP();
-	}
-}
-
 /*
  * private
  */
@@ -188,11 +172,11 @@ bool sx_setOpMode(uint8_t mode)
 		break;
 	}
 
-	/* wait for frequency synthesis, 5ms timeout */
+	/* wait for frequency synthesis, 10ms timeout */
 	uint8_t opmode = 0;
-	for(int i=0; i<50 && opmode != mode; i++)
+	for(int i=0; i<10 && opmode != mode; i++)
 	{
-		delay_us(100);
+		HAL_Delay(1);
 		opmode = sx_readRegister(REG_OP_MODE);
 	}
 
@@ -309,7 +293,7 @@ bool sx_receiveStart(void)
 	return sx_setOpMode(LORA_RXCONT_MODE);
 }
 
-int sx_channel_free4tx(void)
+int sx_channel_free4tx(bool doCAD)
 {
 	uint8_t mode = sx_getOpMode();
 	if(SX_IN_FSK_MODE(mode))
@@ -321,12 +305,16 @@ int sx_channel_free4tx(void)
 		return TX_TX_ONGOING;
 
 	/* in case of receiving, is it ongoing? */
-	for(int i=0; i<400 && (mode == LORA_RXCONT_MODE || mode == LORA_RXSINGLE_MODE); i++)
+	for(int i=0; i<4/*00*/ && (mode == LORA_RXCONT_MODE || mode == LORA_RXSINGLE_MODE); i++)
 	{
 		if(sx_readRegister(REG_MODEM_STAT) & 0x0B)
 			return TX_RX_ONGOING;
-		delay_us(10);
+		HAL_Delay(1);
 	}
+
+	/* CAD not required */
+	if(doCAD == false)
+		return TX_OK;
 
 	/*
 	 * CAD
@@ -340,7 +328,7 @@ int sx_channel_free4tx(void)
 //TODO: it may enter a life lock here...
 	uint8_t iflags;
 	while(((iflags=sx_readRegister(REG_IRQ_FLAGS)) & IRQ_CAD_DONE) == 0)
-		delay_us(1);
+		HAL_Delay(1);
 
 	if(iflags & IRQ_CAD_DETECTED)
 	{
@@ -870,7 +858,7 @@ int sx1272_sendFrame(uint8_t *data, int length, uint8_t cr)
 #endif
 
 	/* channel accessible? */
-	int state = sx_channel_free4tx();
+	int state = sx_channel_free4tx(true);
 	if(state != TX_OK)
 		return state;
 
@@ -1007,7 +995,7 @@ int sx1272_sendFrame_FSK(sx_fsk_conf_t *conf, uint8_t *data, int num_data)
 		return TX_ERROR;
 
 	/* channel accessible? */
-	int state = sx_channel_free4tx();
+	int state = sx_channel_free4tx(false);
 	if(state != TX_OK)
 		return state;
 
@@ -1024,7 +1012,7 @@ int sx1272_sendFrame_FSK(sx_fsk_conf_t *conf, uint8_t *data, int num_data)
 	sx_writeRegister(REG_BITRATE_LSB, 0x40);
 
 	/* freq */
-	int frf = round(((double)conf->frep) * 1638.423);
+	int frf = round(((double)conf->frep) * 1638.4116);			//correct value: 1638.4 (don't use float)
 	sx_writeRegister(REG_FRF_MSB, (frf>>16) & 0xFF);
 	sx_writeRegister(REG_FRF_MID, (frf>>8) & 0xFF);
 	sx_writeRegister(REG_FRF_LSB, frf & 0xFF);
@@ -1067,7 +1055,7 @@ int sx1272_sendFrame_FSK(sx_fsk_conf_t *conf, uint8_t *data, int num_data)
 	sx_airtime += sx_expectedAirTime_ms();
 
 	/* start TX */
-	//note: seq: tx on start, fromtransmit -> lowpower, lowpower = seq_off (w/ init mode), start
+	//note: seq: tx on start, from transmit -> lowpower, lowpower = seq_off (w/ init mode), start
 	sx_writeRegister(REG_SEQ_CONFIG1, 0x80 | 0x10);
 
 	/* bypass waiting */

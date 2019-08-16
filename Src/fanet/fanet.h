@@ -19,6 +19,7 @@ extern "C" {
 void fanet_init(serial_t *serial);
 void fanet_loop(void);
 
+void fanet_sx_int(void);
 void fanet_pps_int(void);
 
 #ifdef __cplusplus
