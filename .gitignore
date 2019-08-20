@@ -4,4 +4,6 @@ Debug Semihosting/*
 
 # FLARM
 Src/flarm/*
+Src/bootloader/xloader.c
+Src/bootloader/xloader.h
 /Debug Semihosting/

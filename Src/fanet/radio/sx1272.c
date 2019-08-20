@@ -365,9 +365,9 @@ bool sx1272_init(SPI_HandleTypeDef *spi)
 
 	/* Reset pulse for LoRa module initialization */
 	HAL_GPIO_WritePin(SXRESET_GPIO_Port, SXRESET_Pin, GPIO_PIN_SET);
-	HAL_Delay(1);
+	HAL_Delay(2);
 	HAL_GPIO_WritePin(SXRESET_GPIO_Port, SXRESET_Pin, GPIO_PIN_RESET);
-	HAL_Delay(6);
+	HAL_Delay(7);
 
 #ifdef SX1272_DO_FSK
 	/* get POR registers */

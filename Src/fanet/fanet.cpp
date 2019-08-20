@@ -29,7 +29,8 @@ void fanet_init(serial_t *serial)
 	while(fmac.begin(app) == false)
 	{
 		serial_int.print_line(FN_REPLYE_RADIO_FAILED);
-		HAL_Delay(1000);
+		HAL_Delay(500);
+		NVIC_SystemReset();
 	}
 
 	/* FLARM */

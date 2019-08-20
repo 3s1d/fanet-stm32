@@ -45,7 +45,13 @@
 /* USER CODE BEGIN Includes */
 
 #include <stdio.h>
+#include <stdbool.h>
+#include <string.h>							//TBR!!!
 #include <math.h>
+
+#include "config.h"
+
+#include "bootloader/bld_upd.h"
 #include "fanet/fanet.h"
 #include "fanet/radio/sx1272.h"
 #include "serial.h"
@@ -67,30 +73,8 @@ void SystemClock_Config(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
-#ifdef DEBUG_SEMIHOSTING
-extern void initialise_monitor_handles(void);
-#endif
-
 #ifdef DEBUG
-int _write (int fd, char *ptr, int len)
-{
-	while(HAL_UART_Transmit_IT(&hlpuart1, (uint8_t *)ptr, len) == HAL_BUSY);
-	while(hlpuart1.gState != (__IO HAL_UART_StateTypeDef) HAL_UART_STATE_READY);
-
-	return len;
-}
-
-int _read (int fd, char *ptr, int len)
-{
-	//TODO: untested
-	*ptr = 0x00;// Flush the character buffer
-	HAL_UART_Receive(&hlpuart1, (uint8_t*) ptr, 1, 0xFFFF);
-	return 1;
-}
-#endif
-
-#if defined(DEGUB) && defined(DEBUG_SEMIHOSTING)
-#error "DEBUG and DEBUG_SEMIHOSTING is defined for print. Only one of them can be used."
+extern void initialise_monitor_handles(void);
 #endif
 
 /* USER CODE END PFP */
@@ -143,12 +127,10 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
 	/* Debug */
-#ifdef DEBUG_SEMIHOSTING
+#ifdef DEBUG
 	/* semihosting */
 	initialise_monitor_handles();
-#endif
 
-#if defined(DEBUG) || defined(DEBUG_SEMIHOSTING)
 	printf("### DEBUG Enabled\n");
 #endif
 
@@ -169,6 +151,20 @@ int main(void)
 	HAL_FLASH_OB_Lock();
 	HAL_FLASH_Lock();
 #endif
+
+#ifdef UPDATE_BOOTLOADER
+//	uint32_t t1 = HAL_GetTick();
+	bootloader_update(serial->uart);
+
+	//test
+//	char str[64];
+//	snprintf(str, sizeof(str), "#BLD MSG,1,%lu\n", HAL_GetTick()-t1);
+//	HAL_Delay(210);
+//	while(HAL_UART_Transmit_IT(serial->uart, (uint8_t *)str, strlen(str)) == HAL_BUSY);
+//	while(serial->uart->gState != (__IO HAL_UART_StateTypeDef) HAL_UART_STATE_READY);
+
+#endif
+
 	fanet_init(serial);
 
 	initialized = true;
