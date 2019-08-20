@@ -13,7 +13,6 @@
 void jump_app(void* startAddr)
 {
 	uint32_t* address = (uint32_t*) startAddr;
-	__set_MSP(*address);
 	void (*entryAddress)(void) = ((void (*)(void)) *(address + 1));
 
 	HAL_RCC_DeInit();
@@ -21,6 +20,9 @@ void jump_app(void* startAddr)
 	SysTick->CTRL = 0;
 	SysTick->LOAD = 0;
 	SysTick->VAL = 0;
+
+	__HAL_SYSCFG_REMAPMEMORY_SYSTEMFLASH();
+	__set_MSP(*address);
 
 	entryAddress();
 }

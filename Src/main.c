@@ -153,16 +153,7 @@ int main(void)
 #endif
 
 #ifdef UPDATE_BOOTLOADER
-//	uint32_t t1 = HAL_GetTick();
-	bootloader_update(serial->uart);
-
-	//test
-//	char str[64];
-//	snprintf(str, sizeof(str), "#BLD MSG,1,%lu\n", HAL_GetTick()-t1);
-//	HAL_Delay(210);
-//	while(HAL_UART_Transmit_IT(serial->uart, (uint8_t *)str, strlen(str)) == HAL_BUSY);
-//	while(serial->uart->gState != (__IO HAL_UART_StateTypeDef) HAL_UART_STATE_READY);
-
+	bootloader_update(serial->uart);				//duration 10-250ms
 #endif
 
 	fanet_init(serial);
