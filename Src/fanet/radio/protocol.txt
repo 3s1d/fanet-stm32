@@ -131,7 +131,7 @@ bit 0-23	Longitude   (Absolute, see below)
 
 ------------
 
-Landmarks (Type = 5)
+Landmarks (Type = 5) 
 Note: Landmarks are completely independent. Thus the first coordinate in each packet has to be an absolute one. All others are compressed in relation to the one before. 
 Note2: Identification/detection shall be done by hashing the whole payload, excluding bytes 0, 1 and, 2 (optional). That way one quietly can change the layer to 'Don't care' and quickly 
 	destroy the landmark w/o having to wait for it's relative live span to be exceeded. 
