@@ -39,7 +39,7 @@ public:
 	{
 		otherStatus = 0,
 		hiking = 1,
-		vehilce = 2,
+		vehicle = 2,
 		bike = 3,
 		boot = 4,
 		needAride = 8,

@@ -107,8 +107,8 @@
  * State: 		#FNS lat(deg),lon(deg),alt(m MSL),speed(km/h),climb(m/s),heading(deg)
  * 						[,year(since 1900),month(0-11),day,hour,min,sec,sep(m),turn(deg/s)]
  * 					note: all values in float/int (NOT hex), time is required for FLARM in struct tm format
- * 					note2: FLARM uses the WGS84 altitudes ->
- * 							sep = Geoid separation: difference between ellipsoid and mean sea level
+ * 					note2: FLARM uses the ellipsoid altitudes ->
+ * 							sep = Height of geoid (mean sea level) above WGS84 ellipsoid
  * 					note3: turn is optional
  * Transmit: 		#FNT type,dest_manufacturer,dest_id,forward,ack_required,length,length*2hex[,signature]	note: all values in hex
  *
