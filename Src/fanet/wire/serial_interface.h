@@ -109,7 +109,7 @@
  * 					note: all values in float/int (NOT hex), time is required for FLARM in struct tm format
  * 					note2: FLARM uses the ellipsoid altitudes ->
  * 							sep = Height of geoid (mean sea level) above WGS84 ellipsoid
- * 					note3: turn is optional
+ * 					note3: QNEoffset is optional: QNEoffset = QNE - GPS altitude
  * Transmit: 		#FNT type,dest_manufacturer,dest_id,forward,ack_required,length,length*2hex[,signature]	note: all values in hex
  *
  * Address: 		#FNA manufacturer(hex),id(hex)								note: w/o address is returned
