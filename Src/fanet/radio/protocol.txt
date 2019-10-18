@@ -88,9 +88,9 @@ bit 0-6		Value		in 0.1m/s
 bit 0-7		Value		in 360/256 deg
 
 [optional]
-[Byte 11]	Turn rate 	(max +/- 64deg/s, 2-Complement)
-bit 7		Scaling 	1->4x, 0->1x
-bit 0-6		Value 		in 0.25deg/s	
+[Byte 11]	QNE offset 	(=QNE-GPS altitude, max +/- 254m, 2-Complement)
+bit 7		Scaling 	1->2x, 0->1x
+bit 0-6		Value 		in m	
 
 ------------
 
@@ -112,8 +112,9 @@ bit 0-7 	Subheader, Subtype (TBD)
 ------------
 
 Service (Type = 4)
+[recommended intervall: 30sec]
 
-[Byte 0]	Header	(additional payload will be added in order 6 to 1, followed by Extended Header 7 to 0)
+[Byte 0]	Header	(additional payload will be added in order 6 to 1, followed by Extended Header payload 7 to 0 once defined)
 bit 7		Internet Gateway (no additional payload required, other than a position)
 bit 6		Temperature (+1byte in 0.5 degree, 2-Complement)
 bit 5		Wind (+3byte: 1byte Heading in 360/256 degree, 1byte speed and 1byte gusts in 0.2km/h (each: bit 7 scale 5x or 1x, bit 0-6))
@@ -121,7 +122,7 @@ bit 4		Humidity (+1byte: in 0.4% (%rh*10/4))
 bit 3		Barometric pressure normailized (+2byte: in 10Pa, offset by 430hPa, unsigned little endian (hPa-430)*10)
 bit 2		Support for Remote Configuration (Advertisement)
 bit 1		State of Charge  (+1byte lower 4 bits: 0x00 = 0%, 0x01 = 6.666%, .. 0x0F = 100%)
-bit 0		Extended Header (+1byte directly after byte 0) (TBD, it may indicate the number of available landmarks) 
+bit 0		Extended Header (+1byte directly after byte 0)
 		The following is only mandatory if no additional data will be added. Broadcasting only the gateway/remote-cfg flag doesn't require pos information. 
 [Byte 1-3 or Byte 2-4]	Position	(Little Endian, 2-Complement)		
 bit 0-23	Latitude	(Absolute, see below)
@@ -198,8 +199,8 @@ bit 7-0		Subtype:
 			3:	Reserved
 			4..8:	Geofence for Geo-Forwarding: Altitude bottom, top (each: ('1Byte signed'+109) * 25m (-127->-450m, 127->5900m), only once) + 
 							n times: Position (1st absolute others compressed, see below)
-			9..21:	Broadcast Reply feature. Byte[1] Wind Sectors (like in type 5), Byte [2] is type (and forward bit) followed by its payload.
-				Recommendation: 9 for name.
+			9..33:	Broadcast Reply feature. Byte[1] Wind Sectors (like in type 5), Byte [2] is type (and forward bit) followed by its payload.
+				Recommendation: 9 for name. First 12 none-volatile, second 12 volatile
 
 ------------
 
@@ -226,6 +227,28 @@ bit 7-4		Type
 			Rest: TBD
 bit 3-1		TBD
 bit 0		Online Tracking
+
+------------
+
+HW Info (Type = 8) (EXPERIMENTAL)
+[recommended intervall: very low, every 10min ]
+
+[Byte 0]	Type (Manufacturer Spezific)
+		Manufacturer 0x01:			(Skytraxx)
+			0x01 Windsock
+		Manufacturer 0x06:			(Burnair)
+			0x01 Base station Wifi
+		Manufacturer 0x11:			(FANET +)
+			0x01 Skytraxx 3.0
+			0x02 Syltraxx 2.1
+			0x03 Skytraxx Beacon
+			0x10 Naviter Oudie 5
+[Byte 1-2]	Build Date
+bit 15			0: Release 1: Develop/Experimental Mode
+bit 9-14		Year from 2019 (0 -> 2019, 1 -> 2020, ...)
+bit 5-8			Month
+bit 0-4			Day
++ additional type+manufacturer spezific data (e.g. Windsock transmitts number used volatile replay features)
 
 ------------
 
@@ -335,7 +358,7 @@ Manufacturer IDs:
 0x05		Windline
 0x06		Burnair.ch
 0x07		SoftRF
-0x11		Skytraxx+FLARM, FANET+
+0x11		FANET+ (incl FLARM. Currently Skytraxx, and Naviter)
 ...
 0xFC		Unregistered Devices
 0xFD		Unregistered Devices

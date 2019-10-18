@@ -68,7 +68,7 @@ int App::serializeGroundTracking(uint8_t*& buffer)
 	Frame::coord2payload_absolut(latitude, longitude, buffer);
 
 	/* state */
-	buffer[6] = (state&0x0F)<<4 | !!doOnlineTracking;
+	buffer[6] = (state&0x0F)<<4 | (!!doOnlineTracking);
 
 	return APP_TYPE7_SIZE;
 }
