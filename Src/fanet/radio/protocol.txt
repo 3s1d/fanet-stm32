@@ -233,7 +233,7 @@ bit 0		Online Tracking
 HW Info (Type = 8) (EXPERIMENTAL)
 [recommended intervall: very low, every 10min ]
 
-[Byte 0]	Type (Manufacturer Spezific)
+[Byte 0]	Instrument / Device Type (Manufacturer Spezific)
 		Manufacturer 0x01:			(Skytraxx)
 			0x01 Windsock
 		Manufacturer 0x06:			(Burnair)
@@ -243,7 +243,7 @@ HW Info (Type = 8) (EXPERIMENTAL)
 			0x02 Syltraxx 2.1
 			0x03 Skytraxx Beacon
 			0x10 Naviter Oudie 5
-[Byte 1-2]	Build Date
+[Byte 1-2]	Firmware Build Date
 bit 15			0: Release 1: Develop/Experimental Mode
 bit 9-14		Year from 2019 (0 -> 2019, 1 -> 2020, ...)
 bit 5-8			Month
