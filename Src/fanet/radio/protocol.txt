@@ -234,8 +234,9 @@ HW Info (Type = 8) (EXPERIMENTAL)
 [recommended intervall: very low, every 10min ]
 
 [Byte 0]	Instrument / Device Type (Manufacturer Spezific)
+		Pull request 0x00 (has to be unicast, no further data)
 		Manufacturer 0x01:			(Skytraxx)
-			0x01 Windsock
+			0x01 Wind station
 		Manufacturer 0x06:			(Burnair)
 			0x01 Base station Wifi
 		Manufacturer 0x11:			(FANET +)
@@ -246,8 +247,8 @@ HW Info (Type = 8) (EXPERIMENTAL)
 [Byte 1-2]	Firmware Build Date
 bit 15			0: Release 1: Develop/Experimental Mode
 bit 9-14		Year from 2019 (0 -> 2019, 1 -> 2020, ...)
-bit 5-8			Month
-bit 0-4			Day
+bit 5-8			Month (1-12)
+bit 0-4			Day (1-31)
 + additional type+manufacturer spezific data (e.g. Windsock transmitts number used volatile replay features)
 
 ------------
