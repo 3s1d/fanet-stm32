@@ -312,6 +312,8 @@ void Serial_Interface::fanet_cmd_transmit(char *ch_str)
 	}
 
 	Frame *frm = new Frame(fmac.myAddr);
+//todo integrty check
+//todo serial int handler same as base. enlarge buffers
 
 	/* header */
 	char *p = (char *)ch_str;
@@ -338,6 +340,7 @@ void Serial_Interface::fanet_cmd_transmit(char *ch_str)
 	/* payload */
 	p = strchr(p, SEPARATOR)+1;
 	frm->payload_length = strtol(p, NULL, 16);
+//TODO length <128 check!
 	frm->payload = new uint8_t[frm->payload_length];
 
 	p = strchr(p, SEPARATOR)+1;
