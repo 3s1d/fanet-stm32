@@ -391,6 +391,8 @@ Manufacturer IDs:
 0x07		SoftRF
 0x11		FANET+ (incl FLARM. Currently Skytraxx, and Naviter)
 ...
+0xDF		DF FANET base and weather station
+...
 0xFB		Espressif based base stations, address is last 2bytes of MAC 
 0xFC		Unregistered Devices
 0xFD		Unregistered Devices
