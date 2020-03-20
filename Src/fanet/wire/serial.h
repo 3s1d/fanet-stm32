@@ -19,12 +19,14 @@ extern "C" {
 
 #include "circular_buffer.h"
 
+void serialRxCallback(UART_HandleTypeDef *huart);
+
 typedef struct serial_t
 {
 	UART_HandleTypeDef *uart;
 	circBuf_t *rx_crc_buf;
-	int pushed_cmds;
-	int pulled_cmds;
+	uint16_t pushed_cmds;
+	uint16_t pulled_cmds;
 } serial_t;
 
 serial_t *serial_init(UART_HandleTypeDef *uart);

@@ -297,6 +297,32 @@ void Serial_Interface::fanet_cmd_transmit(char *ch_str)
 	printf("### Packet %s\n", ch_str);
 #endif
 
+	/* remove \r\n and any spaces */
+	char *ptr = strchr(ch_str, '\r');
+	if(ptr == nullptr)
+		ptr = strchr(ch_str, '\n');
+	if(ptr != nullptr)
+		*ptr = '\0';
+	while(*ch_str == ' ')
+		ch_str++;
+
+	/* integrity check */
+	for(char *ptr = ch_str; *ptr != '\0'; ptr++)
+	{
+		if(*ptr >= '0' && *ptr <= '9')
+			continue;
+		if(*ptr >= 'A' && *ptr <= 'F')
+			continue;
+		if(*ptr >= 'a' && *ptr <= 'f')
+			continue;
+		if(*ptr == ',')
+			continue;
+
+		/* not allowed char */
+		print_line(FN_REPLYE_CMD_BROKEN);
+		return;
+	}
+
 	/* w/o an address we can not tx */
 	if(fmac.myAddr == MacAddr())
 	{
@@ -312,8 +338,6 @@ void Serial_Interface::fanet_cmd_transmit(char *ch_str)
 	}
 
 	Frame *frm = new Frame(fmac.myAddr);
-//todo integrty check
-//todo serial int handler same as base. enlarge buffers
 
 	/* header */
 	char *p = (char *)ch_str;
@@ -340,7 +364,12 @@ void Serial_Interface::fanet_cmd_transmit(char *ch_str)
 	/* payload */
 	p = strchr(p, SEPARATOR)+1;
 	frm->payload_length = strtol(p, NULL, 16);
-//TODO length <128 check!
+	if(frm->payload_length >= 128)
+	{
+		delete frm;
+		print_line(FN_REPLYE_FRM_TOO_LONG);
+		return;
+	}
 	frm->payload = new uint8_t[frm->payload_length];
 
 	p = strchr(p, SEPARATOR)+1;

@@ -177,6 +177,8 @@ public:
 	bool txQueueHasFreeSlots(void){ return (tx_fifo.size() < MAC_FIFO_SIZE); }
 	int transmit(Frame *frm) { return tx_fifo.add(frm); }
 
+	uint16_t numNeighbors(void) { return neighbors.size(); }
+
 	/* Addr */
 	const MacAddr &myAddr;
 	bool setAddr(MacAddr addr);

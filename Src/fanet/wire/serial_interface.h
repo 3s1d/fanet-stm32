@@ -87,6 +87,8 @@
 #define FN_REPLYE_TX_BUFF_FULL		FANET_CMD_ERROR, 14, "tx buffer full"
 #define FN_REPLYE_ADDR_GIVEN		FANET_CMD_ERROR, 15, "address already set"
 #define FN_REPLYE_CMD_TOO_SHORT		FANET_CMD_ERROR, 30, "too short"
+#define FN_REPLYE_FRM_TOO_LONG		FANET_CMD_ERROR, 33, "frm too long"
+#define FN_REPLYE_CMD_BROKEN		FANET_CMD_ERROR, 34, "frm broken"
 #define FN_REPLYE_BT_FAILED		BT_CMD_ERROR,    51, "bt failed"
 #define FN_REPLYE_BT_UNKNOWN_CMD	BT_CMD_ERROR,    52, "unknown BT command"
 #define FN_REPLYE_BT_NAME_TOO_SHORT	BT_CMD_ERROR,    53, "name too short"

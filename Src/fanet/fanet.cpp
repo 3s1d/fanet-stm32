@@ -6,9 +6,9 @@
  */
 
 
-#include "serial.h"
 #include "radio/fmac.h"
 #include "radio/sx1272.h"
+#include "wire/serial.h"
 #include "wire/serial_interface.h"
 #include "app.h"
 #include "fanet.h"
@@ -19,6 +19,11 @@
 
 static uint8_t fanet_sxirq = 0;
 static uint8_t fanet_sxexec = 0;
+
+#ifdef FLARM
+	static uint16_t flarm_ppsirq = 0;
+	static uint16_t flarm_ppsexec = 0;
+#endif
 
 void fanet_init(serial_t *serial)
 {
@@ -49,7 +54,7 @@ void fanet_sx_int(void)
 void fanet_pps_int(void)
 {
 #ifdef FLARM
-	casw.pps();
+	flarm_ppsirq++;
 #endif
 }
 
@@ -69,6 +74,12 @@ void fanet_loop(void)
 
 	/* FLARM */
 #ifdef FLARM
+	if(flarm_ppsirq != flarm_ppsexec)
+	{
+		flarm_ppsexec++;
+		casw.pps();
+	}
+
 	casw.handle();
 #endif
 }
