@@ -58,7 +58,7 @@ private:
 	float speed;
 	float climb;
 	float heading;
-	float turnrate;
+	int qneOffset;
 
 	Serial_Interface *mySerialInt = NULL;
 
@@ -91,7 +91,7 @@ public:
 	aircraft_t aircraft = paraglider;
 	status_t state = hiking;
 
-	void set(float lat, float lon, float alt, float speed, float climb, float heading, float turn);
+	void set(float lat, float lon, float alt, float speed, float climb, float heading, float qneOffset);
 
 	/* device -> air */
 	bool is_broadcast_ready(int num_neighbors);

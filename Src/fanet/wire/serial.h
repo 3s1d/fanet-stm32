@@ -33,7 +33,7 @@ serial_t *serial_init(UART_HandleTypeDef *uart);
 
 bool serial_poll(serial_t *serial, char *line, int num);
 
-void serial_print(serial_t *serial, char *str);
+void serial_print(serial_t *serial, const char *str);
 
 #ifdef __cplusplus
 }

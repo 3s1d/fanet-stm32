@@ -26,8 +26,7 @@ extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
-#define USE_HAL_UART_REGISTER_CALLBACKS 1
-
+#define USE_HAL_UART_REGISTER_CALLBACKS 	1
 #include "stm32l4xx_hal_def.h"
 
 /** @addtogroup STM32L4xx_HAL_Driver

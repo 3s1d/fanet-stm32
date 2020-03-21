@@ -305,7 +305,7 @@ int sx_channel_free4tx(bool doCAD)
 		return TX_TX_ONGOING;
 
 	/* in case of receiving, is it ongoing? */
-	for(int i=0; i<4/*00*/ && (mode == LORA_RXCONT_MODE || mode == LORA_RXSINGLE_MODE); i++)
+	for(int i=0; i<4 && (mode == LORA_RXCONT_MODE || mode == LORA_RXSINGLE_MODE); i++)
 	{
 		if(sx_readRegister(REG_MODEM_STAT) & 0x0B)
 			return TX_RX_ONGOING;

@@ -97,8 +97,9 @@ private:
 	unsigned long last_seen;
 public:
 	const MacAddr addr;
+	bool hasTracking;
 
-	NeighborNode(MacAddr addr) : addr(addr) { last_seen = HAL_GetTick(); }
+	NeighborNode(MacAddr addr, bool tracking = false) : addr(addr), hasTracking(tracking) { last_seen = HAL_GetTick(); }
 	void seen(void) { last_seen = HAL_GetTick(); }
 	bool isAround(void) { return last_seen + NEIGHBOR_MAX_TIMEOUT_MS > HAL_GetTick(); }
 };
@@ -178,6 +179,7 @@ public:
 	int transmit(Frame *frm) { return tx_fifo.add(frm); }
 
 	uint16_t numNeighbors(void) { return neighbors.size(); }
+	uint16_t numTrackingNeighbors(void);
 
 	/* Addr */
 	const MacAddr &myAddr;

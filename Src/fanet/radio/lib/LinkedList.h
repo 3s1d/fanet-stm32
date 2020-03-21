@@ -142,8 +142,7 @@ ListNode<T>* LinkedList<T>::getNode(int index){
 	int _pos = 0;
 	ListNode<T>* current = root;
 
-	// Check if the node trying to get is
-	// immediatly AFTER the previous got one
+	// Check if the node trying to get is immediately AFTER the previous got one
 	if(isCached && lastIndexGot <= index){
 		_pos = lastIndexGot;
 		current = lastNodeGot;

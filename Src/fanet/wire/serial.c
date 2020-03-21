@@ -86,7 +86,7 @@ bool serial_poll(serial_t *serial, char *line, int num)
 	return true;
 }
 
-void serial_print(serial_t *ser, char *str)
+void serial_print(serial_t *ser, const char *str)
 {
 	/* use default */
 	if(ser == NULL)

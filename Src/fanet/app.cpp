@@ -44,14 +44,15 @@ int App::serializeTracking(uint8_t*& buffer)
 	/* Heading */
 	buffer[10] = constrain((int)roundf(heading*256.0f/360.0f), 0, 255);
 
-	/* Turn rate */
-	if(!isnan(turnrate))
+	/* QNE offset */
+	if(!isnan(qneOffset))
 	{
-		int turnr4 = constrain((int)roundf(turnrate*4.0f), -255, 255);
-		if(abs(turnr4) > 63)
-			buffer[11] = ((turnr4 + (turnr4>=0?2:-2))/4) | (1<<7);			//set scale factor
+
+		int qneOs = constrain(qneOffset, -254, 254);
+		if(abs(qneOs) > 127)
+			buffer[11] = ((qneOs + (qneOs>=0?1:-1))/2) | (1<<7);			//set scale factor
 		else
-			buffer[11] = turnr4 & 0x7f;
+			buffer[11] = qneOs & 0x7f;
 		return APP_TYPE1_SIZE;
 	}
 	else
@@ -73,20 +74,20 @@ int App::serializeGroundTracking(uint8_t*& buffer)
 	return APP_TYPE7_SIZE;
 }
 
-void App::set(float lat, float lon, float alt, float speed, float climb, float heading, float turn)
+void App::set(float lat, float lon, float alt, float speed, float climb, float heading, float qneOffset)
 {
 	/* currently only used in linear mode */
 	//noInterrupts();
 
 	latitude = lat;
 	longitude = lon;
-	altitude = roundf(alt);
+	altitude = (int)roundf(alt);
 	this->speed = speed;
 	this->climb = climb;
 	if(heading < 0.0f)
 		heading += 360.0f;
 	this->heading = heading;
-	turnrate = turn;
+	this->qneOffset = (int)roundf(qneOffset);
 
 	valid_until = HAL_GetTick() + APP_VALID_STATE_MS;
 

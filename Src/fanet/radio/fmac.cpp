@@ -285,6 +285,8 @@ void FanetMac::handleRx()
 	}
 
 	Frame *frm = rx_fifo.front();
+	if(frm == nullptr)
+		return;
 
 	/* build up neighbors list */
 	bool neighbor_known = false;
@@ -294,6 +296,8 @@ void FanetMac::handleRx()
 		{
 			/* update presents */
 			neighbors.get(i)->seen();
+			if(frm->type == FRM_TYPE_TRACKING || frm->type == FRM_TYPE_GROUNDTRACKING)
+				neighbors.get(i)->hasTracking = true;
 			neighbor_known = true;
 			break;
 		}
@@ -306,10 +310,8 @@ void FanetMac::handleRx()
 		if (neighbors.size() > MAC_NEIGHBOR_SIZE)
 			delete neighbors.shift();
 
-		neighbors.add(new NeighborNode(frm->src));
+		neighbors.add(new NeighborNode(frm->src, frm->type == FRM_TYPE_TRACKING || frm->type == FRM_TYPE_GROUNDTRACKING));
 	}
-
-
 
 	/* is the frame a forwarded one and is it still in the tx queue? */
 	Frame *frm_list = tx_fifo.frame_in_list(frm);
@@ -554,6 +556,16 @@ void FanetMac::handleTx()
 		if (app_tx)
 			delete frm;
 	}
+}
+
+uint16_t FanetMac::numTrackingNeighbors(void)
+{
+	uint16_t num = 0;
+	for (uint16_t i = 0; i < neighbors.size(); i++)
+		if (neighbors.get(i)->hasTracking)
+			num++;
+
+	return num;
 }
 
 MacAddr FanetMac::readAddr(void)
