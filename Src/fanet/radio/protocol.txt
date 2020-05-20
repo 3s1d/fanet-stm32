@@ -398,8 +398,10 @@ Manufacturer IDs:
 0x05		Windline
 0x06		Burnair.ch
 0x07		SoftRF
-0x0E		OGN Tracker
+...
 0x11		FANET+ (incl FLARM. Currently Skytraxx, and Naviter)
+...
+0xE0		OGN Tracker
 ...
 0xFB		Espressif based base stations, address is last 2bytes of MAC 
 0xFC		Unregistered Devices
