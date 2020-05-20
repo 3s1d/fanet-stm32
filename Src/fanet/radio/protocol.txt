@@ -88,8 +88,13 @@ bit 0-6		Value		in 0.1m/s
 bit 0-7		Value		in 360/256 deg
 
 [optional]
-[Byte 11]	QNE offset 	(=QNE-GPS altitude, max +/- 254m, 2-Complement)
-bit 7		Scaling 	1->2x, 0->1x
+[Byte 11]	Turn rate 	(max +/- 64deg/s, positive is clock wise, 2-Complement)
+bit 7		Scaling 	1->4x, 0->1x
+bit 0-6		Value 		in 0.25deg/s	
+
+[optional, if used byte 11 is mandatory as well]
+[Byte 12]	QNE offset 	(=QNE-GPS altitude, max +/- 254m, 2-Complement)
+bit 7		Scaling 	1->4x, 0->1x
 bit 0-6		Value 		in m	
 
 ------------
@@ -252,7 +257,11 @@ bit 15			0: Release 1: Develop/Experimental Mode
 bit 9-14		Year from 2019 (0 -> 2019, 1 -> 2020, ...)
 bit 5-8			Month (1-12)
 bit 0-4			Day (1-31)
-+ additional type/manufacturer/version spezific optional data (e.g. Windsock transmitts number used volatile replay features)
++ additional type/manufacturer/version spezific optional data
+e.g. Recomendation / Skytraxx best practice: 
+Byte [3-4]
+bit 15-4	Uptime in 30sec steps
+bit 0-3		unused (Skytraxx Windstation: number used volatile replay features)
 
 ------------
 
