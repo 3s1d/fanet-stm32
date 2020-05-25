@@ -236,7 +236,7 @@ bit 0		Online Tracking
 
 ------------
 
-HW Info (Type = 8)
+HW Info (Type = 8)	(DEPRICATED)
 [recommended intervall: very low, every 10min]
 
 [Byte 0]	Instrument / Device Type (Manufacturer Spezific)
@@ -265,7 +265,7 @@ bit 0-3		unused (Skytraxx Windstation: number used volatile replay features)
 
 ------------
 
-Thermal (Type = 9) (EXPERIMENTAL)
+Thermal (Type = 9)
 [recommended intervall: floor((#neighbors/10 + 1) * 30s), if a thermal is detected]
 
 [Byte 0-2]	Position of thermal	(Little Endian, 2-Complement)
@@ -289,6 +289,41 @@ bit 0-6		Value		in 0.5km/h
 
 [Byte 10]	Avg wind heading at thermal (attention: 90degree means the wind is coming from east and blowing towards west)
 bit 0-7		Value		in 360/256 deg
+
+------------
+
+HW Info (Type = A) (EXPERIMENTAL, will replace type 8)
+[recommended intervall: very low, every 10min]
+
+[Byte 0]	Header	(additional payload will be added in order 6 to 1, followed by Extended Header payload 7 to 0 once defined)
+bit 7		Ping-Pong Request (must be unicast and must not cotain any data other then subheader, bits in header are considered as requests)
+bit 6		Hardware Subtype + Build Date		
+bit 5		ICAO address (+3byte address)
+bit 4		Uptime (+2byte, time in minutes)
+bit 3		Rx RSSI (+1byte RSSI+50, +3byte FANET address, example: -30 -> -80dBm, only valid for uni cast requests, reply usually broiadcast)
+bit 2-1		TBD		
+bit 0		Extended Header (+1byte directly after byte 0)
+
+Hardware Subtype + Build Date
+[Byte 1]	Instrument / Device Type (Manufacturer Spezific)
+		Pull request 0x00 (has to be unicast, no further data)
+		Manufacturer 0x01:			(Skytraxx)
+			0x01 Wind station
+		Manufacturer 0x06:			(Burnair)
+			0x01 Base station Wifi
+		Manufacturer 0x11:			(FANET +)
+			0x01 Skytraxx 3.0
+			0x02 Syltraxx 2.1
+			0x03 Skytraxx Beacon
+			0x10 Naviter Oudie 5
+		Manufacturer 0xFB:
+			0x01 Skytraxx WiFi base station
+[Byte 2-3]	Firmware Build Date
+bit 15			0: Release 1: Develop/Experimental Mode
+bit 9-14		Year from 2019 (0 -> 2019, 1 -> 2020, ...)
+bit 5-8			Month (1-12)
+bit 0-4			Day (1-31)
+
 
 ------------
 

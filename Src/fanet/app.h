@@ -17,7 +17,7 @@
 #define	APP_TYPE1OR7_MINTAU_MS			250
 #define	APP_TYPE1OR7_TAU_MS			5000
 
-#define APP_TYPE1_SIZE				12
+#define APP_TYPE1_SIZE				13		//11+2
 #define APP_TYPE7_SIZE				7
 
 class App : public Fapp
@@ -58,6 +58,7 @@ private:
 	float speed;
 	float climb;
 	float heading;
+	float turnrate;
 	int qneOffset;
 
 	Serial_Interface *mySerialInt = NULL;
@@ -91,7 +92,7 @@ public:
 	aircraft_t aircraft = paraglider;
 	status_t state = hiking;
 
-	void set(float lat, float lon, float alt, float speed, float climb, float heading, float qneOffset);
+	void set(float lat, float lon, float alt, float speed, float climb, float heading, float turnrate = NAN, float qneOffset = NAN);
 
 	/* device -> air */
 	bool is_broadcast_ready(int num_neighbors);

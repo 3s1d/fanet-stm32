@@ -28,31 +28,46 @@ int App::serializeTracking(uint8_t*& buffer)
 	((uint16_t*)buffer)[3] |= (aircraft&0x7)<<12;
 
 	/* Speed */
-	int speed2 = constrain((int)roundf(speed*2.0f), 0, 635);
+	int speed2 = constrain((int)std::round(speed*2.0f), 0, 635);
 	if(speed2 > 127)
 		buffer[8] = ((speed2+2)/5) | (1<<7);					//set scale factor
 	else
 		buffer[8] = speed2;
 
 	/* Climb */
-	int climb10 = constrain((int)roundf(climb*10.0f), -315, 315);
-	if(abs(climb10) > 63)
+	int climb10 = constrain((int)std::round(climb*10.0f), -315, 315);
+	if(std::abs(climb10) > 63)
 		buffer[9] = ((climb10 + (climb10>=0?2:-2))/5) | (1<<7);			//set scale factor
 	else
 		buffer[9] = climb10 & 0x7F;
 
 	/* Heading */
-	buffer[10] = constrain((int)roundf(heading*256.0f/360.0f), 0, 255);
+	buffer[10] = constrain((int)std::round(heading*256.0f/360.0f), 0, 255);
+
+	/* no optional data */
+	if(std::isnan(turnrate) && qneOffset == 0)
+		return APP_TYPE1_SIZE - 2;
+
+	/* emulate turn rate in case only QNE is present */
+	float tr = turnrate;
+	if(std::isnan(tr))
+		tr = 0.0f;
+
+	int trOs = constrain((int)std::round(turnrate * 4.0f), -254, 254);
+	if(std::abs(trOs) >= 63)
+		buffer[11] = ((trOs + (trOs>=0?2:-2))/4) | (1<<7);			//set scale factor
+	else
+		buffer[11] = trOs & 0x7f;
 
 	/* QNE offset */
-	if(!isnan(qneOffset))
+	if(qneOffset != 0)
 	{
 
 		int qneOs = constrain(qneOffset, -254, 254);
-		if(abs(qneOs) > 127)
-			buffer[11] = ((qneOs + (qneOs>=0?1:-1))/2) | (1<<7);			//set scale factor
+		if(std::abs(qneOs) > 63)
+			buffer[12] = ((qneOs + (qneOs>=0?2:-2))/4) | (1<<7);		//set scale factor
 		else
-			buffer[11] = qneOs & 0x7f;
+			buffer[12] = qneOs & 0x7f;
 		return APP_TYPE1_SIZE;
 	}
 	else
@@ -74,7 +89,7 @@ int App::serializeGroundTracking(uint8_t*& buffer)
 	return APP_TYPE7_SIZE;
 }
 
-void App::set(float lat, float lon, float alt, float speed, float climb, float heading, float qneOffset)
+void App::set(float lat, float lon, float alt, float speed, float climb, float heading, float turnrate, float qneOffset)
 {
 	/* currently only used in linear mode */
 	//noInterrupts();
@@ -86,8 +101,11 @@ void App::set(float lat, float lon, float alt, float speed, float climb, float h
 	this->climb = climb;
 	if(heading < 0.0f)
 		heading += 360.0f;
+	if(heading > 360.0f)
+		heading -= 360.0f;
 	this->heading = heading;
-	this->qneOffset = (int)roundf(qneOffset);
+	this->turnrate = turnrate;
+	this->qneOffset = std::isnan(qneOffset) ? 0 : (int)roundf(qneOffset);
 
 	valid_until = HAL_GetTick() + APP_VALID_STATE_MS;
 

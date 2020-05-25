@@ -30,7 +30,7 @@
 
 /*
  * State: 		#FNS lat(deg),lon(deg),alt(m MSL),speed(km/h),climb(m/s),heading(deg)
- * 						[,year(since 1900),month(0-11),day,hour,min,sec,sep(m)[,QNEoffset(m)]]
+ * 						[,year(since 1900),month(0-11),day,hour,min,sec,sep(m)[,turnrate(deg/sec)[,QNEoffset(m)]]]
  * 					note: all values in float/int (NOT hex), time is required for FLARM in struct tm format
  * 					note2: FLARM uses the ellipsoid altitudes ->
  * 							sep = Height of geoid (mean sea level) above WGS84 ellipsoid
@@ -108,7 +108,14 @@ void Serial_Interface::fanet_cmd_state(char *ch_str)
 	if(p)
 		sep = atof(++p);
 
-	/* turn */
+	/* turn rate */
+	float turnrate = NAN;
+	if(p)				//we got sep -> continue
+		p = strchr(p, SEPARATOR);
+	if(p)
+		turnrate = atof(++p);
+
+	/* QNE offset */
 	float qneOffset = NAN;
 	if(p)				//we got sep -> continue
 		p = strchr(p, SEPARATOR);
@@ -121,7 +128,7 @@ void Serial_Interface::fanet_cmd_state(char *ch_str)
 	while(heading < 0.0f)
 		heading += 360.0f;
 
-	app.set(lat, lon, alt, speed, climb, heading, qneOffset);
+	app.set(lat, lon, alt, speed, climb, heading, turnrate, qneOffset);
 
 #ifdef FLARM
 	casw.update_position(lat, lon, alt+sep, speed, climb, heading, &t);
