@@ -438,6 +438,8 @@ Manufacturer IDs:
 ...
 0xE0		OGN Tracker
 ...
+0xFA		Various
+		0x0001-0x00FF		GetroniX
 0xFB		Espressif based base stations, address is last 2bytes of MAC 
 0xFC		Unregistered Devices
 0xFD		Unregistered Devices
