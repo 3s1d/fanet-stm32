@@ -42,7 +42,8 @@ void fanet_init(serial_t *serial)
 
 	/* FLARM */
 #ifdef FLARM
-	casw.begin(fmac.myAddr);
+	if(casw.begin(fmac.myAddr) == false)
+		serial_int.print_line(FA_REPLYE_FLARMADDRISSUE);
 #endif
 
 	serial_int.print_line(FN_REPLYM_INITIALIZED);

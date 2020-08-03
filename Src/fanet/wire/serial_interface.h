@@ -103,6 +103,7 @@
 #define FA_REPLY_OK			FLARM_CMD_OK, 	 0,  ""
 #define FA_REPLYE_UNKNOWN_CMD		FLARM_CMD_ERROR, 90, "unknown FLARM command"
 #define FA_REPLYE_EXPIRED		FLARM_CMD_ERROR, 91, "FLARM expired"
+#define FA_REPLYE_FLARMADDRISSUE	FLARM_CMD_ERROR, 92, "FLARM addr issue"
 #endif
 /*
  * Normal Commands
