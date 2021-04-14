@@ -439,6 +439,7 @@ Manufacturer IDs:
 0x11		FANET+ (incl FLARM. Currently Skytraxx, and Naviter)
 ...
 0xE0		OGN Tracker
+0xE4		4aviation
 ...
 0xFA		Various
 		0x0001-0x00FF		GetroniX
