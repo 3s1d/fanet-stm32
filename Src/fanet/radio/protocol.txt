@@ -435,8 +435,9 @@ Manufacturer IDs:
 0x07		SoftRF
 0x08		GXAircom
 0x09		Airtribune
+0x10		alfapilot
 ...
-0x11		FANET+ (incl FLARM. Currently Skytraxx, and Naviter)
+0x11		FANET+ (incl FLARM. Currently Skytraxx, Naviter, and Skybean)
 ...
 0xE0		OGN Tracker
 0xE4		4aviation
