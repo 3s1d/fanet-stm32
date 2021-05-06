@@ -54,7 +54,7 @@ No Payload, must be unicast
 -----------
 
 Tracking (Type = 1)
-[recommended intervall: floor((#neighbors/10 + 1) * 5s) ]
+[recommended interval: floor((#neighbors/10 + 1) * 5s) ]
 Note: Done by app layer of the fanet module
 
 [Byte 0-2]	Position	(Little Endian, 2-Complement)
@@ -100,7 +100,7 @@ bit 0-6		Value 		in m
 ------------
 
 Name (Type = 2)
-[recommended intervall: every 4min]
+[recommended interval: every 4min]
 
 8bit String (of arbitrary length, \0 termination not required)
 
@@ -117,7 +117,7 @@ bit 0-7 	Subheader, Subtype (TBD)
 ------------
 
 Service (Type = 4)
-[recommended intervall: 40sec]
+[recommended interval: 40sec]
 
 [Byte 0]	Header	(additional payload will be added in order 6 to 1, followed by Extended Header payload 7 to 0 once defined)
 bit 7		Internet Gateway (no additional payload required, other than a position)
@@ -236,8 +236,8 @@ bit 0		Online Tracking
 
 ------------
 
-HW Info (Type = 8)	(DEPRICATED)
-[recommended intervall: very low, every 10min]
+HW Info (Type = 8)	(DEPRECATED)
+[recommended interval: very low, every 10min]
 
 [Byte 0]	Instrument / Device Type (Manufacturer Spezific)
 		Pull request 0x00 (has to be unicast, no further data)
@@ -266,7 +266,7 @@ bit 0-3		unused (Skytraxx Windstation: number used volatile replay features)
 ------------
 
 Thermal (Type = 9)
-[recommended intervall: floor((#neighbors/10 + 1) * 30s), if a thermal is detected]
+[recommended interval: floor((#neighbors/10 + 1) * 30s), if a thermal is detected]
 
 [Byte 0-2]	Position of thermal	(Little Endian, 2-Complement)
 bit 0-23	Latitude 		(Absolute, see below)
@@ -293,7 +293,7 @@ bit 0-7		Value		in 360/256 deg
 ------------
 
 HW Info (Type = A) (EXPERIMENTAL, will replace type 8)
-[recommended intervall: very low, every 10min]
+[recommended interval: very low, every 10min]
 
 [Byte 0]	Header	(additional payload will be added in order 6 to 1, followed by Extended Header payload 7 to 0 once defined)
 bit 7		Ping-Pong Request (must be unicast and must not cotain any data other then subheader, bits in header are considered as requests)
