@@ -296,8 +296,8 @@ HW Info (Type = A) (replaces type 8)
 [recommended interval: very low, every 10min]
 
 [Byte 0]	Header	(additional payload will be added in order 6 to 1, followed by Extended Header payload 7 to 0 once defined)
-bit 7		Ping-Pong Request (must be unicast and must not cotain any data other then subheader, bits in header are considered as requests)
-bit 6		Hardware Subtype + Build Date		
+bit 7		Ping-Pong Request (must be unicast and must not contain any data other then subheader, bits in header are considered as requests)
+bit 6		Hardware Subtype + Build Date (mandatory bytes 1-3)	
 bit 5		ICAO address (+3byte address)
 bit 4		Uptime (+2byte, time in minutes)
 bit 3		Rx RSSI (+1byte RSSI+50, +3byte FANET address, example: -30 -> -80dBm, only valid for uni cast requests, reply usually broiadcast)
