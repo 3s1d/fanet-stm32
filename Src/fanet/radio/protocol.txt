@@ -292,7 +292,7 @@ bit 0-7		Value		in 360/256 deg
 
 ------------
 
-HW Info (Type = A) (EXPERIMENTAL, will replace type 8)
+HW Info (Type = A) (replaces type 8)
 [recommended interval: very low, every 10min]
 
 [Byte 0]	Header	(additional payload will be added in order 6 to 1, followed by Extended Header payload 7 to 0 once defined)
@@ -315,7 +315,10 @@ Hardware Subtype + Build Date
 			0x01 Skytraxx 3.0
 			0x02 Syltraxx 2.1
 			0x03 Skytraxx Beacon
+			0x04 Skytraxx 4.0
 			0x10 Naviter Oudie 5
+			0x11 Naviter Oudie N
+			0x20 Skybean Strato
 		Manufacturer 0xFB:
 			0x01 Skytraxx WiFi base station
 [Byte 2-3]	Firmware Build Date
