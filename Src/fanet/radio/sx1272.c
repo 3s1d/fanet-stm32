@@ -1056,6 +1056,12 @@ int sx1272_sendFrame_FSK(sx_fsk_conf_t *conf, uint8_t *data, int num_data)
 
 	/* start TX */
 	//note: seq: tx on start, from transmit -> lowpower, lowpower = seq_off (w/ init mode), start
+#ifdef SXRX_Pin
+	HAL_GPIO_WritePin(SXRX_GPIO_Port, SXRX_Pin, GPIO_PIN_RESET);
+#endif
+#ifdef SXTX_Pin
+	HAL_GPIO_WritePin(SXTX_GPIO_Port, SXTX_Pin, GPIO_PIN_SET);
+#endif
 	sx_writeRegister(REG_SEQ_CONFIG1, 0x80 | 0x10);
 
 	/* bypass waiting */
