@@ -1022,7 +1022,20 @@ int sx1272_sendFrame_FSK(sx_fsk_conf_t *conf, uint8_t *data, int num_data)
 	sx_writeRegister(REG_FDEV_LSB, 0x33);
 
 	/* PA output pin to PA_BOOST, power to default value */
-	sx_writeRegister(REG_PA_CONFIG, 0x80 |  max(0, sx1272_region.dBm - 2));
+	int pwr_dBm = sx1272_region.dBm;
+	if(pwr_dBm >= 18)
+	{
+		/* high power mode */
+		sx_writeRegister(REG_PA_DAC, PA_DAC_HIGH_PWR);
+		pwr_dBm -= 5;
+	}
+	else
+	{
+		/* normal mode */
+		sx_writeRegister(REG_PA_DAC, PA_DAC_DEFAULT_PWR);
+		pwr_dBm -= 2;
+	}
+	sx_writeRegister(REG_PA_CONFIG, 0x80 |  max(0, pwr_dBm));
 
 	/* disable LowPnTxPllOff -> low phase noise PLL in transmit mode, however more current */
 	sx_writeRegister(REG_PA_RAMP, 0x09);
