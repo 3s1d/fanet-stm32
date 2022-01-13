@@ -173,12 +173,15 @@ bool sx_setOpMode(uint8_t mode)
 	}
 
 	/* wait for frequency synthesis, 10ms timeout */
+	//note: LORA_CAD_MODE may instantaneously end in LORA_STANDBY_MODE
 	uint8_t opmode = 0;
-	for(int i=0; i<10 && opmode != mode; i++)
+	const uint8_t mask = (mode == LORA_CAD_MODE) ? 0xf9 : 0xff;
+	for(int i=0; i<10 && opmode != (mode & mask); i++)
 	{
 		HAL_Delay(1);
-		opmode = sx_readRegister(REG_OP_MODE);
+		opmode = sx_readRegister(REG_OP_MODE) & mask;
 	}
+
 
 #if (SX1272_debug_mode > 1)
 	printf("## SX1272 opmode: %02X\n", opmode);
@@ -305,7 +308,7 @@ int sx_channel_free4tx(bool doCAD)
 		return TX_TX_ONGOING;
 
 	/* in case of receiving, is it ongoing? */
-	for(int i=0; i<4 && (mode == LORA_RXCONT_MODE || mode == LORA_RXSINGLE_MODE); i++)
+	for(uint16_t i=0; i<4 && (mode == LORA_RXCONT_MODE || mode == LORA_RXSINGLE_MODE); i++)
 	{
 		if(sx_readRegister(REG_MODEM_STAT) & 0x0B)
 			return TX_RX_ONGOING;
@@ -325,9 +328,8 @@ int sx_channel_free4tx(bool doCAD)
 	sx_setOpMode(LORA_CAD_MODE);
 
 	/* wait for CAD completion */
-//TODO: it may enter a life lock here...
 	uint8_t iflags;
-	while(((iflags=sx_readRegister(REG_IRQ_FLAGS)) & IRQ_CAD_DONE) == 0)
+	for(uint16_t i = 0; i<10 && ((iflags=sx_readRegister(REG_IRQ_FLAGS)) & IRQ_CAD_DONE) == 0; i++)
 		HAL_Delay(1);
 
 	if(iflags & IRQ_CAD_DETECTED)
@@ -741,10 +743,6 @@ void sx1272_irq(void)
 		printf("## SX1272 irq: \n");
 #endif
 
-	/* enter sleep mode */
-	//note: does not destroy MSB (LORA <-> FSK)
-	sx_setOpMode(LORA_STANDBY_MODE);
-
 #ifdef SX1272_DO_FSK
 	if(!(sx_getOpMode()&0x80))
 	{
@@ -763,6 +761,10 @@ void sx1272_irq(void)
 		return;
 	}
 #endif
+
+	/* enter sleep mode */
+	//note: does not destroy MSB (LORA <-> FSK)
+	sx_setOpMode(LORA_STANDBY_MODE);
 
 	if(sx1272_irq_cb == NULL)
 	{
