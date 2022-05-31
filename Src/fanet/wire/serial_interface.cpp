@@ -564,6 +564,13 @@ void Serial_Interface::dongle_cmd_region(char *ch_str)
 		print_line(DN_REPLYE_UNKNOWNPARAMETER);
 }
 
+void Serial_Interface::dongle_pps(void)
+{
+	/* emulate pps signal */
+	fanet_pps_int();
+	print_line(DN_REPLY_OK);
+}
+
 /* mux string */
 void Serial_Interface::dongle_eval(char *str)
 {
@@ -580,6 +587,9 @@ void Serial_Interface::dongle_eval(char *str)
 		break;
 	case CMD_BOOTLOADER:
 		dongle_cmd_jump(&str[strlen(DONGLE_CMD_START) + 1]);
+		break;
+	case CMD_PPS:
+		dongle_pps();
 		break;
 	default:
 		print_line(DN_REPLYE_DONGLE_UNKNOWN_CMD);

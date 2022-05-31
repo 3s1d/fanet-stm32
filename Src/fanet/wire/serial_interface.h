@@ -32,8 +32,8 @@
 #define FANET_CMD_NACK			FANET_CMD_START "R NACK"
 
 /* Bluetooth Replies */
-#define BT_CMD_OK			BT_CMD_START "R OK"
-#define BT_CMD_WARN			BT_CMD_START "R WRN"
+#define BT_CMD_OK				BT_CMD_START "R OK"
+#define BT_CMD_WARN				BT_CMD_START "R WRN"
 #define BT_CMD_ERROR			BT_CMD_START "R ERR"
 
 /* Dongle Replies */
@@ -50,60 +50,61 @@
 
 /* Commands */
 /* FANET */
-#define CMD_STATE			'S'
+#define CMD_STATE				'S'
 #define CMD_TRANSMIT			'T'
-#define CMD_ADDR			'A'
-#define CMD_CONFIG			'C'
-#define CMD_MODE			'M'
+#define CMD_ADDR				'A'
+#define CMD_CONFIG				'C'
+#define CMD_MODE				'M'
 
 #define CMD_RX_FRAME			"F"
 
-#define CMD_NAME			'N'		//bluetooth only
+#define CMD_NAME				'N'		//bluetooth only
 
 /* Dongle */
-#define CMD_VERSION			'V'
-#define CMD_POWER			'P'
-#define CMD_REGION			'L'
+#define CMD_VERSION				'V'
+#define CMD_POWER				'P'
+#define CMD_REGION				'L'
 #define CMD_BOOTLOADER			'J'
+#define CMD_PPS					'S'
 
 /* FLARM */
 #ifdef FLARM
-#define CMD_EXPIRES			'X'
+#define CMD_EXPIRES				'X'
 #endif
 
 
 #define SERIAL_debug_mode		0
 
 /* values <= 0 removes code and message */
-#define FN_REPLY_OK			FANET_CMD_OK, 	 0,  ""
-#define FN_REPLYM_INITIALIZED		FANET_CMD_MSG,   1,  "initialized"
-#define FN_REPLYE_RADIO_FAILED		FANET_CMD_ERROR, 2,  "radio failed"
-#define FN_REPLYE_UNKNOWN_CMD		FANET_CMD_ERROR, 5,  "unknown command"
-#define FN_REPLYE_FN_UNKNOWN_CMD	FANET_CMD_ERROR, 6,  "unknown FN command"
-#define FN_REPLYE_NO_SRC_ADDR		FANET_CMD_ERROR, 10, "no source address"
-#define FN_REPLYE_INVALID_ADDR		FANET_CMD_ERROR, 11, "invalid address"
-#define FN_REPLYE_INCOMPATIBLE_TYPE	FANET_CMD_ERROR, 12, "incompatible type"
-#define FN_REPLYM_PWRDOWN		FANET_CMD_MSG,	 13, "power down"
-#define FN_REPLYE_TX_BUFF_FULL		FANET_CMD_ERROR, 14, "tx buffer full"
-#define FN_REPLYE_ADDR_GIVEN		FANET_CMD_ERROR, 15, "address already set"
-#define FN_REPLYE_CMD_TOO_SHORT		FANET_CMD_ERROR, 30, "too short"
-#define FN_REPLYE_FRM_TOO_LONG		FANET_CMD_ERROR, 33, "frm too long"
-#define FN_REPLYE_CMD_BROKEN		FANET_CMD_ERROR, 34, "frm broken"
-#define FN_REPLYE_BT_FAILED		BT_CMD_ERROR,    51, "bt failed"
-#define FN_REPLYE_BT_UNKNOWN_CMD	BT_CMD_ERROR,    52, "unknown BT command"
-#define FN_REPLYE_BT_NAME_TOO_SHORT	BT_CMD_ERROR,    53, "name too short"
-#define FN_REPLYW_BT_RECONF_ID		BT_CMD_WARN,     55, "reconfiguring id"
-#define DN_REPLY_OK			DONGLE_CMD_OK, 	 0,  ""
+#define FN_REPLY_OK						FANET_CMD_OK, 	 0,  ""
+#define FN_REPLYM_INITIALIZED			FANET_CMD_MSG,   1,  "initialized"
+#define FN_REPLYE_RADIO_FAILED			FANET_CMD_ERROR, 2,  "radio failed"
+#define FN_REPLYE_UNKNOWN_CMD			FANET_CMD_ERROR, 5,  "unknown command"
+#define FN_REPLYE_FN_UNKNOWN_CMD		FANET_CMD_ERROR, 6,  "unknown FN command"
+#define FN_REPLYE_NO_SRC_ADDR			FANET_CMD_ERROR, 10, "no source address"
+#define FN_REPLYE_INVALID_ADDR			FANET_CMD_ERROR, 11, "invalid address"
+#define FN_REPLYE_INCOMPATIBLE_TYPE		FANET_CMD_ERROR, 12, "incompatible type"
+#define FN_REPLYM_PWRDOWN				FANET_CMD_MSG,	 13, "power down"
+#define FN_REPLYE_TX_BUFF_FULL			FANET_CMD_ERROR, 14, "tx buffer full"
+#define FN_REPLYE_ADDR_GIVEN			FANET_CMD_ERROR, 15, "address already set"
+#define FN_REPLYE_CMD_TOO_SHORT			FANET_CMD_ERROR, 30, "too short"
+#define FN_REPLYE_FRM_TOO_LONG			FANET_CMD_ERROR, 33, "frm too long"
+#define FN_REPLYE_CMD_BROKEN			FANET_CMD_ERROR, 34, "frm broken"
+#define FN_REPLYE_BT_FAILED				BT_CMD_ERROR,    51, "bt failed"
+#define FN_REPLYE_BT_UNKNOWN_CMD		BT_CMD_ERROR,    52, "unknown BT command"
+#define FN_REPLYE_BT_NAME_TOO_SHORT		BT_CMD_ERROR,    53, "name too short"
+#define FN_REPLYW_BT_RECONF_ID			BT_CMD_WARN,     55, "reconfiguring id"
+#define DN_REPLY_OK						DONGLE_CMD_OK, 	 0,  ""
 #define DN_REPLYE_DONGLE_UNKNOWN_CMD	DONGLE_CMD_ERROR,60, "unknown DG command"
-#define DN_REPLYE_JUMP			DONGLE_CMD_ERROR,61, "unknown jump point"
-#define DN_REPLYE_POWER			DONGLE_CMD_ERROR,70, "power switch failed"
-#define DN_REPLYE_TOOLESSPARAMETER	DONGLE_CMD_ERROR,80, "too less parameter"
-#define DN_REPLYE_UNKNOWNPARAMETER	DONGLE_CMD_ERROR,81, "unknown parameter"
+#define DN_REPLYE_JUMP					DONGLE_CMD_ERROR,61, "unknown jump point"
+#define DN_REPLYE_POWER					DONGLE_CMD_ERROR,70, "power switch failed"
+#define DN_REPLYE_TOOLESSPARAMETER		DONGLE_CMD_ERROR,80, "too less parameter"
+#define DN_REPLYE_UNKNOWNPARAMETER		DONGLE_CMD_ERROR,81, "unknown parameter"
 #ifdef FLARM
-#define FA_REPLY_OK			FLARM_CMD_OK, 	 0,  ""
-#define FA_REPLYE_UNKNOWN_CMD		FLARM_CMD_ERROR, 90, "unknown FLARM command"
-#define FA_REPLYE_EXPIRED		FLARM_CMD_ERROR, 91, "FLARM expired"
-#define FA_REPLYE_FLARMADDRISSUE	FLARM_CMD_ERROR, 92, "FLARM addr issue"
+#define FA_REPLY_OK						FLARM_CMD_OK, 	 0,  ""
+#define FA_REPLYE_UNKNOWN_CMD			FLARM_CMD_ERROR, 90, "unknown FLARM command"
+#define FA_REPLYE_EXPIRED				FLARM_CMD_ERROR, 91, "FLARM expired"
+#define FA_REPLYE_FLARMADDRISSUE		FLARM_CMD_ERROR, 92, "FLARM addr issue"
 #endif
 /*
  * Normal Commands
@@ -128,10 +129,11 @@
  * Region:		#DGL freq(868,915),power(2..20 (dBm))							note: 10dBm is sufficient for
  * 															Skytraxx modules using the
  * 															stock antenna
+ * PPS:			#DGS										only use for test purpose
  *
- * Jump to DFU:		#DGJ BLstm										stm32 default bootloader
- * 			#DGJ BLxld										xloader
- * 														recommended: use 2 GPIOs connected
+ * Jump to DFU:		#DGJ BLstm								stm32 default bootloader
+ * 					#DGJ BLxld								xloader
+ * 															recommended: use 2 GPIOs connected
  * 															to RESEST and BOOT0
  *
  * FLARM
@@ -164,6 +166,7 @@ private:
 	void dongle_cmd_power(char *ch_str);
 	void dongle_cmd_region(char *ch_str);
 	void dongle_cmd_jump(char *ch_str);
+	void dongle_pps(void);
 
 	/* Bluetooth Commands */
 #ifdef FANET_BLUETOOTH
