@@ -2,22 +2,22 @@
 Zone 1: EU, default
 
 868.2Mhz
-Syncword 0xF1 (SX1262: 0xF4 0x14)
-250kHz Bandwidth
-Spreading Factor 7
+Syncword: 0xF1 (SX1262: 0xF4 0x14)
+Bandwidth: 250kHz
+Spreading Factor: 7
 ExplicitHeader: Coding Rate CR 5-8/8 (depending on #neighbors), CRC for Payload 
 Tx Power: 14dBm
-Duty Cycle: 1%
+Duty Cycle: <1%
 
 Zone 2: America (South+North), Australia, New Zealand, China, Japan
 
 920.8Mhz
-Syncword 0xF1 (SX1262: 0xF4 0x14)
-500kHz Bandwidth
-Spreading Factor 7
+Syncword: 0xF1 (SX1262: 0xF4 0x14)
+Bandwidth: 500kHz
+Spreading Factor: 7
 ExplicitHeader: Coding Rate CR 5-8/8 (depending on #neighbors), CRC for Payload 
 Tx Power: 14dBm'ish
-Duty Cycle: 1%
+Duty Cycle: <1%
 
 
 --== FANET MAC ==--
