@@ -20,6 +20,48 @@ Tx Power: 14dBm'ish
 Duty Cycle: <1%
 
 
+Work in progress: Worldwide FANET Freq:
+
+	//BoundingBox(float topLat, float btmLat, float rightLon, float leftLon)
+	const region_t zones[7] =
+	{
+			{
+					.name = "US920",
+					.mac = {.channel = CH_920_800, .dBm = 15, .bw = BW_500},
+					.bb = BoundingBox(deg2rad(90), deg2rad(-90), deg2rad(-30), deg2rad(-169))
+			},
+			{
+					.name = "AU920",
+					.mac = {.channel = CH_920_800, .dBm = 15, .bw = BW_500},
+					.bb = BoundingBox(deg2rad(-10), deg2rad(-48), deg2rad(179), deg2rad(110))
+			},
+			{
+					.name = "IN866",
+					.mac = {.channel = CH_866_200, .dBm = 14, .bw = BW_250},
+					.bb = BoundingBox(deg2rad(40), deg2rad(5), deg2rad(89), deg2rad(69))
+			},
+			{
+					.name = "KR923",
+					.mac = {.channel = CH_923_200, .dBm = 15, .bw = BW_125},
+					.bb = BoundingBox(deg2rad(39), deg2rad(34), deg2rad(130), deg2rad(124))
+			},
+			{
+					.name = "AS920",
+					.mac = {.channel = CH_923_200, .dBm = 15, .bw = BW_125},
+					.bb = BoundingBox(deg2rad(47), deg2rad(21), deg2rad(146), deg2rad(89))
+			},
+			{
+					.name = "IL918",
+					.mac = {.channel = CH_918_500, .dBm = 15, .bw = BW_125},
+					.bb = BoundingBox(deg2rad(34), deg2rad(29), deg2rad(36), deg2rad(34))
+			},
+			{		//default
+					.name = "EU868",
+					.mac = {.channel = CH_868_200, .dBm = 14, .bw = BW_250},
+					.bb = BoundingBox(deg2rad(90), deg2rad(-90), deg2rad(180), deg2rad(-180))
+			}
+	};
+
 --== FANET MAC ==--
 
 
