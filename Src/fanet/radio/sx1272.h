@@ -16,8 +16,6 @@ extern "C" {
 #define SX1272_DO_FSK
 #define SX1272_AIRTIME_AVG_INTERVALL			5000
 
-#define min(a,b) 	((a)<(b) ? (a):(b))
-#define max(a,b) 	((a)>(b) ? (a):(b))
 
 //! REGISTERS //
 
@@ -171,16 +169,20 @@ extern "C" {
 #define 	CR_MASK					0x38
 
 //CHANNELS
-#define		CH_868_200				0xD90CCD		//868.200Mhz
-#define		CH_868_225				0xD90E67		//868.225Mhz
-#define		CH_868_250				0xD91000		//868.250Mhz
-#define		CH_868_275				0xD9119A		//868.275Mhz
-#define		CH_868_300				0xD91333		//868.300Mhz
-#define		CH_868_325				0xD914CD		//868.325Mhz
-#define		CH_868_350				0xD91666		//868.350Mhz
-#define		CH_868_375				0xD91800		//868.375Mhz
-#define		CH_868_400				0xD9199A		//868.400Mhz
-#define		CH_869_525				0xD9619A		//869.525Mhz
+#define		CH_866_200					0xD88CCD		//866.200Mhz
+#define		CH_868_200					0xD90CCD		//868.200Mhz
+#define		CH_868_225					0xD90E67		//868.225Mhz
+#define		CH_868_250					0xD91000		//868.250Mhz
+#define		CH_868_275					0xD9119A		//868.275Mhz
+#define		CH_868_300					0xD91333		//868.300Mhz
+#define		CH_868_325					0xD914CD		//868.325Mhz
+#define		CH_868_350					0xD91666		//868.350Mhz
+#define		CH_868_375					0xD91800		//868.375Mhz
+#define		CH_868_400					0xD9199A		//868.400Mhz
+#define		CH_869_525					0xD9619A		//869.525Mhz
+#define		CH_918_500					0xE5A000		//918.500Mhz
+#define		CH_920_800					0xE63333		//920.800Mhz
+#define		CH_923_200					0xE6CCCD		//923.200Mhz
 
 //TRANSMITT POWER
 #define PA_DAC_HIGH_PWR					0x87
@@ -227,12 +229,13 @@ typedef struct
 {
 	uint32_t channel;
 	int dBm;
+	uint8_t bw;
 } sx_region_t;
 
 
 bool sx1272_init(SPI_HandleTypeDef *spi);
 
-void sx1272_setBandwidth(uint8_t bw);
+bool sx1272_setBandwidth(uint8_t bw);
 uint8_t sx1272_getBandwidth(void);
 
 void sx1272_setLowDataRateOptimize(bool ldro);
@@ -256,6 +259,8 @@ bool sx1272_setPower(int pwr);
 
 bool sx1272_setArmed(bool rxmode);
 bool sx1272_isArmed(void);
+
+bool sx1272_reset(bool hard);
 
 void sx1272_irq(void);
 void sx1272_setIrqReceiver(irq_callback cb);

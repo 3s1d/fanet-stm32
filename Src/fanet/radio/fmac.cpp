@@ -12,6 +12,8 @@
 #include "stm32l4xx_hal.h"
 #include "spi.h"
 
+#include "common.h"
+
 #include "lib/random.h"
 #include "sx1272.h"
 #include "fmac.h"
@@ -206,9 +208,8 @@ bool FanetMac::begin(Fapp &app)
 	sx1272_setIrqReceiver(frameRxWrapper);
 
 	/* region specific. default is EU */
-	sx_region_t region;
-	region.channel = CH_868_200;
-	region.dBm = 10;			//+4dB antenna gain (skytraxx/lynx) -> max allowed output (14dBm)
+	sx_region_t region = zones[NELEM(zones)-1].mac;
+	region.dBm -= antGain;
 	sx1272_setRegion(region);
 
 	/* enter sleep mode */
@@ -231,6 +232,11 @@ void FanetMac::stateWrapper()
 {
 	fmac.handleRx();
 	fmac.handleTx();
+
+	/* radio chip might be broken */
+	//note: postpone (10x) next reset in case nobody is around
+	if(HAL_GetTick() > fmac.lastRx + MAC_RESET_TIMEOUT and sx1272_reset(true))
+		fmac.lastRx = HAL_GetTick() + 10*MAC_RESET_TIMEOUT;
 }
 
 bool FanetMac::isNeighbor(MacAddr addr)
@@ -287,6 +293,9 @@ void FanetMac::handleRx()
 	Frame *frm = rx_fifo.front();
 	if(frm == nullptr)
 		return;
+
+	/* store rx timestamp */
+	lastRx = HAL_GetTick();
 
 	/* build up neighbors list */
 	bool neighbor_known = false;
@@ -390,6 +399,10 @@ void FanetMac::handleTx()
 {
 	/* still in backoff or chip turned off*/
 	if (HAL_GetTick() < csma_next_tx  || !sx1272_isArmed())
+		return;
+
+	/* ensure we are at the correct freq */
+	if(freqApproved == false and approveFreq() == false)
 		return;
 
 	/* find next send-able packet */
@@ -618,6 +631,82 @@ bool FanetMac::eraseAddr(void)
 	HAL_FLASH_Lock();
 
 	return (ret == HAL_OK && sectorError == UINT32_MAX);
+}
+
+bool FanetMac::approveFreq(void)
+{
+	if(freqApproved)
+		return freqApproved;
+
+	if(std::isnan(myApp->getPos_deg().latitude) or myApp->getPos_deg() == Coordinate2D())
+	{
+		/* no gnss fix -> no freq range for sure */
+		freqNoFixTill = HAL_GetTick();
+		return false;
+	}
+	else if(HAL_GetTick() - freqNoFixTill < 5000)
+	{
+		/* fix not old enough */
+		return false;
+	}
+
+	/* fix for >5sec */
+	const Coordinate2D pos_rad = Coordinate2D(deg2rad(myApp->getPos_deg().latitude), deg2rad(myApp->getPos_deg().longitude));
+	for(uint16_t i=0; i<NELEM(zones); i++)
+	{
+		if(zones[i].bb.isInside(pos_rad))
+		{
+			bool reArm = false;
+			if(sx1272_isArmed())
+				reArm = sx1272_setArmed(false);
+
+			sx_region_t region = zones[i].mac;
+			region.dBm -= antGain;
+			freqApproved = sx1272_setRegion(region);
+			if(freqApproved)
+				freqIdx = i;
+
+			if(reArm)
+				sx1272_setArmed(true);
+			break;
+		}
+	}
+
+	return freqApproved;
+}
+
+void FanetMac::setZone(uint16_t idx)
+{
+	if(idx >= NELEM(zones))
+		return;
+
+	/* manually adjust zone */
+	bool reArm = false;
+	if(sx1272_isArmed())
+		reArm = sx1272_setArmed(false);
+
+	sx_region_t region = zones[idx].mac;
+	region.dBm -= antGain;
+	freqApproved = sx1272_setRegion(region);
+	if(freqApproved)
+		freqIdx = idx;
+
+	if(reArm)
+		sx1272_setArmed(true);
+}
+
+const char *FanetMac::getZoneName(void)
+{
+	if(freqIdx < 0 or freqIdx >= (int16_t) NELEM(zones))
+		return nullptr;
+	return zones[freqIdx].name;
+}
+
+uint32_t FanetMac::getChannel(void)
+{
+	if(freqIdx < 0 or freqIdx >= (int16_t) NELEM(zones))
+		return 0;
+	return zones[freqIdx].mac.channel;
 }
 
 FanetMac fmac = FanetMac();

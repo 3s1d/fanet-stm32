@@ -14,7 +14,7 @@ int App::serializeTracking(uint8_t*& buffer)
 	buffer = new uint8_t[APP_TYPE1_SIZE];
 
 	/* position */
-	Frame::coord2payload_absolut(latitude, longitude, buffer);
+	Frame::coord2payload_absolut(pos_deg.latitude, pos_deg.longitude, buffer);
 
 	/* altitude set the lower 12bit */
 	int alt = constrain(altitude, 0, 8190);
@@ -81,7 +81,7 @@ int App::serializeGroundTracking(uint8_t*& buffer)
 	buffer = new uint8_t[APP_TYPE7_SIZE];
 
 	/* position */
-	Frame::coord2payload_absolut(latitude, longitude, buffer);
+	Frame::coord2payload_absolut(pos_deg.latitude, pos_deg.longitude, buffer);
 
 	/* state */
 	buffer[6] = (state&0x0F)<<4 | (!!doOnlineTracking);
@@ -94,8 +94,8 @@ void App::set(float lat, float lon, float alt, float speed, float climb, float h
 	/* currently only used in linear mode */
 	//noInterrupts();
 
-	latitude = lat;
-	longitude = lon;
+	pos_deg.latitude = lat;
+	pos_deg.longitude = lon;
 	altitude = (int)roundf(alt);
 	this->speed = speed;
 	this->climb = climb;
@@ -115,7 +115,7 @@ void App::set(float lat, float lon, float alt, float speed, float climb, float h
 bool App::is_broadcast_ready(int num_neighbors)
 {
 	/* is the state valid? */
-	if(HAL_GetTick() > valid_until || isnan(latitude) || isnan(longitude))
+	if(HAL_GetTick() > valid_until || isnan(pos_deg.latitude) || isnan(pos_deg.longitude))
 		return false;
 
 	/* in case of a busy channel, ensure that frames from the fifo get also a change */

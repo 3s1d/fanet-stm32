@@ -9,6 +9,7 @@
 #define STACK_APP_H_
 
 #include "radio/fmac.h"
+#include "misc/coordinate.h"
 #include "wire/serial_interface.h"
 
 #define APP_VALID_STATE_MS			10000
@@ -52,8 +53,7 @@ public:
 
 private:
 	/* units are degrees, seconds, and meter */
-	float latitude = NAN;
-	float longitude = NAN;
+	Coordinate2D pos_deg = {NAN, NAN};
 	int altitude;
 	float speed;
 	float climb;
@@ -104,6 +104,8 @@ public:
 
 	void begin(Serial_Interface &si) { mySerialInt = &si; }
 	Frame *get_frame();
+
+	const Coordinate2D &getPos_deg(void) { return pos_deg; }
 
 #ifdef FANET_NAME_AUTOBRDCAST
 	/* Name automation in case the host application does not know this... */

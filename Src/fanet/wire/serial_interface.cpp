@@ -418,6 +418,43 @@ void Serial_Interface::fanet_cmd_transmit(char *ch_str)
 	}
 }
 
+/* Address: #FNZ [zoneId[0..6]], note return meight contain -1 -> unset */
+void Serial_Interface::fanet_cmd_zone(char *ch_str)
+{
+	/* remove \r\n and any spaces*/
+	char *ptr = strchr(ch_str, '\r');
+	if(ptr == NULL)
+		ptr = strchr(ch_str, '\n');
+	if(ptr != NULL)
+		*ptr = '\0';
+	while(*ch_str == ' ')
+		ch_str++;
+
+	if(strlen(ch_str) == 0)
+	{
+		/* report addr */
+		char buf[64];
+		snprintf(buf, sizeof(buf), "%s%c %d,%s\n", FANET_CMD_START, CMD_ZONE,
+				fmac.getZone(), fmac.getZone()>=0 ? fmac.zones[fmac.getZone()].name : "UNSET");
+		print(buf);
+		return;
+	}
+
+	/* idx */
+	char *p = (char *)ch_str;
+	int idx = strtol(p, NULL, 10);
+
+	if(idx<=0 or idx >= (int)NELEM(fmac.zones))
+	{
+		print_line(FN_REPLYE_INCOMPATIBLE_TYPE);
+		return;
+	}
+
+	fmac.setZone(idx);
+	print_line(FN_REPLY_OK);
+}
+
+
 /* mux string */
 void Serial_Interface::fanet_eval(char *str)
 {
@@ -437,6 +474,9 @@ void Serial_Interface::fanet_eval(char *str)
 		break;
 	case CMD_MODE:
 		fanet_cmd_mode(&str[strlen(DONGLE_CMD_START) + 1]);
+		break;
+	case CMD_ZONE:
+		fanet_cmd_zone(&str[strlen(DONGLE_CMD_START) + 1]);
 		break;
 	default:
 		print_line(FN_REPLYE_FN_UNKNOWN_CMD);
@@ -493,7 +533,7 @@ void Serial_Interface::dongle_cmd_power(char *ch_str)
 #endif
 
 	/* set status */
-	if(sx1272_setArmed(!!atoi(ch_str)))
+	if(fmac.setPower(!!atoi(ch_str)))
 		print_line(DN_REPLY_OK);
 	else
 		print_line(DN_REPLYE_POWER);
@@ -710,7 +750,7 @@ void Serial_Interface::flarm_cmd_power(char *ch_str)
 
 	/* enable rf backend if not yet powered up already */
 	if(!!atoi(ch_str) && !sx1272_isArmed())
-		sx1272_setArmed(true);
+		fmac.setPower(true);
 
 	/* set status */
 	casw.do_flarm = !!atoi(ch_str);

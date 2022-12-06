@@ -12,6 +12,9 @@
 #include <stdbool.h>
 #include <math.h>
 
+#include "../misc/boundingbox.h"
+#include "sx1272.h"
+
 /*
  * Hard coded tx time assumption:
  * -SR7
@@ -37,34 +40,36 @@
  * ONLY change if you know what you are doing. Can destroy the hole nearby network!
  */
 
-#define MAC_SLOT_MS				20
+#define MAC_SLOT_MS							20
 
 #define MAC_TX_MINPREAMBLEHEADERTIME_MS		15
-#define MAC_TX_TIMEPERBYTE_MS			2
-#define MAC_TX_ACKTIMEOUT			1000
-#define MAC_TX_RETRANSMISSION_TIME		1000
+#define MAC_TX_TIMEPERBYTE_MS				2
+#define MAC_TX_ACKTIMEOUT					1000
+#define MAC_TX_RETRANSMISSION_TIME			1000
 #define MAC_TX_RETRANSMISSION_RETRYS		3
-#define MAC_TX_BACKOFF_EXP_MIN			7
-#define MAC_TX_BACKOFF_EXP_MAX			12
+#define MAC_TX_BACKOFF_EXP_MIN				7
+#define MAC_TX_BACKOFF_EXP_MAX				12
 
-#define MAC_FORWARD_MAX_RSSI_DBM		-90		//todo test
-#define MAC_FORWARD_MIN_DB_BOOST		20
-#define MAC_FORWARD_DELAY_MIN			100
-#define MAC_FORWARD_DELAY_MAX			300
+#define MAC_FORWARD_MAX_RSSI_DBM			-90		//todo test
+#define MAC_FORWARD_MIN_DB_BOOST			20
+#define MAC_FORWARD_DELAY_MIN				100
+#define MAC_FORWARD_DELAY_MAX				300
 
-#define NEIGHBOR_MAX_TIMEOUT_MS			250000		//4min + 10sek
+#define NEIGHBOR_MAX_TIMEOUT_MS				250000		//4min + 10sek
 
-#define MAC_SYNCWORD				0xF1
+#define MAC_SYNCWORD						0xF1
+
+#define MAC_RESET_TIMEOUT					70000
 
 /*
  * Number defines
  */
-#define MAC_NEIGHBOR_SIZE			64
+#define MAC_NEIGHBOR_SIZE					64
 #define MAC_MAXNEIGHBORS_4_TRACKING_2HOP	5
-#define MAC_CODING48_THRESHOLD			8
+#define MAC_CODING48_THRESHOLD				8
 
-#define MAC_FIFO_SIZE				8
-#define MAC_FRAME_LENGTH			254
+#define MAC_FIFO_SIZE						8
+#define MAC_FRAME_LENGTH					254
 
 #define MAC_FLASH_PAGESIZE			2048
 #define MAC_ADDR_PAGE				((((uint16_t)(READ_REG(*((uint32_t *)FLASHSIZE_BASE)))) * 1024)/MAC_FLASH_PAGESIZE - 1)
@@ -118,6 +123,8 @@ public:
 	/* air -> device */
 	virtual void handle_acked(bool ack, MacAddr &addr) = 0;
 	virtual void handle_frame(Frame *frm) = 0;
+
+	virtual const Coordinate2D &getPos_deg(void) = 0;
 };
 
 class MacFifo
@@ -139,6 +146,56 @@ public:
 
 class FanetMac
 {
+public:
+	typedef struct
+	{
+		const char* name;
+		sx_region_t mac;
+		BoundingBox bb;
+	} region_t;
+
+	int8_t antGain = 3;
+
+	//BoundingBox(float topLat, float btmLat, float rightLon, float leftLon)
+	const region_t zones[7] =
+	{
+			{
+					.name = "US920",
+					.mac = {.channel = CH_920_800, .dBm = 15, .bw = BW_500},
+					.bb = BoundingBox(deg2rad(90), deg2rad(-90), deg2rad(-30), deg2rad(-169))
+			},
+			{
+					.name = "AU920",
+					.mac = {.channel = CH_920_800, .dBm = 15, .bw = BW_500},
+					.bb = BoundingBox(deg2rad(-10), deg2rad(-48), deg2rad(179), deg2rad(110))
+			},
+			{
+					.name = "IN866",
+					.mac = {.channel = CH_866_200, .dBm = 14, .bw = BW_250},
+					.bb = BoundingBox(deg2rad(40), deg2rad(5), deg2rad(89), deg2rad(69))
+			},
+			{
+					.name = "KR923",
+					.mac = {.channel = CH_923_200, .dBm = 15, .bw = BW_125},
+					.bb = BoundingBox(deg2rad(39), deg2rad(34), deg2rad(130), deg2rad(124))
+			},
+			{
+					.name = "AS920",
+					.mac = {.channel = CH_923_200, .dBm = 15, .bw = BW_125},
+					.bb = BoundingBox(deg2rad(47), deg2rad(21), deg2rad(146), deg2rad(89))
+			},
+			{
+					.name = "IL918",
+					.mac = {.channel = CH_918_500, .dBm = 15, .bw = BW_125},
+					.bb = BoundingBox(deg2rad(34), deg2rad(29), deg2rad(36), deg2rad(34))
+			},
+			{		//default
+					.name = "EU868",
+					.mac = {.channel = CH_868_200, .dBm = 14, .bw = BW_250},
+					.bb = BoundingBox(deg2rad(90), deg2rad(-90), deg2rad(180), deg2rad(-180))
+			}
+	};
+
 private:
 	TimerObject myTimer;
 	MacFifo tx_fifo;
@@ -153,11 +210,18 @@ private:
 	/* used for interrupt handler */
 	uint8_t rx_frame[MAC_FRAME_LENGTH];
 	int num_received = 0;
+	uint32_t lastRx = 0;
+
+	bool freqApproved = false;
+	int16_t freqIdx = -1;
+	uint32_t freqNoFixTill = 0;
 
 	static void frameRxWrapper(int length);
 	void frameReceived(int length);
 
 	void ack(Frame* frm);
+
+	bool approveFreq(void);
 
 	static void stateWrapper();
 	void handleTx();
@@ -173,6 +237,13 @@ public:
 
 	bool begin(Fapp &app);
 	void handle() { myTimer.Update(); }
+	bool setPower(bool pwr)
+	{
+		/* forward rx mark into future */
+		if(pwr)
+			lastRx = HAL_GetTick() + MAC_RESET_TIMEOUT;
+		return sx1272_setArmed(pwr);
+	}
 
 	bool txQueueDepleted(void) { return (tx_fifo.size() == 0); }
 	bool txQueueHasFreeSlots(void){ return (tx_fifo.size() < MAC_FIFO_SIZE); }
@@ -186,6 +257,12 @@ public:
 	bool setAddr(MacAddr addr);
 	bool eraseAddr(void);
 	MacAddr readAddr();
+
+	/* zone */
+	const char *getZoneName(void);
+	uint32_t getChannel(void);
+	int16_t getZone(void) { return freqIdx; }
+	void setZone(uint16_t idx);
 };
 
 extern FanetMac fmac;

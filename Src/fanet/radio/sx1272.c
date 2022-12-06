@@ -2,10 +2,13 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
+
 #include "main.h"
 #include "stm32l4xx.h"
 #include "stm32l4xx_hal_gpio.h"
 #include "stm32l4xx_hal_spi.h"
+
+#include "minmax.h"
 
 #include "../radio/sx1272.h"
 
@@ -391,7 +394,7 @@ bool sx1272_init(SPI_HandleTypeDef *spi)
 
 	return mode;
 }
-void sx1272_setBandwidth(uint8_t bw)
+bool sx1272_setBandwidth(uint8_t bw)
 {
 #if (SX1272_debug_mode > 0)
 	printf("## SX1272 BW:%02X\n", bw;
@@ -416,7 +419,9 @@ void sx1272_setBandwidth(uint8_t bw)
 
 	/* restore state */
 	if(opmode != LORA_STANDBY_MODE)
-		sx_setOpMode(opmode);
+		return sx_setOpMode(opmode);
+	else
+		return true;
 }
 
 uint8_t sx1272_getBandwidth(void)
@@ -736,6 +741,30 @@ bool sx1272_isArmed(void)
 	return sx1272_armed;
 }
 
+bool sx1272_reset(bool hard)
+{
+	/* perform hardware reset */
+	if(hard)
+	{
+		HAL_GPIO_WritePin(SXRESET_GPIO_Port, SXRESET_Pin, GPIO_PIN_SET);
+		HAL_Delay(1);
+		HAL_GPIO_WritePin(SXRESET_GPIO_Port, SXRESET_Pin, GPIO_PIN_RESET);
+		HAL_Delay(7);
+	}
+
+	/* enter sleep mode soft way */
+	sx_setOpMode(GFSK_SLEEP_MODE);
+	sx_setOpMode(LORA_SLEEP_MODE);
+
+	bool ret = sx_writeRegister_burst(REG_BITRATE_MSB, sx_reg_backup[SX_REG_BACKUP_LORA], sizeof(sx_reg_backup[SX_REG_BACKUP_LORA]));
+
+	/* switch irq behavior back and re-enter rx mode */
+	if(sx1272_armed && ret)
+		ret &= sx_receiveStart();
+
+	return ret;
+}
+
 //note: do not use hardware based interrupts here
 void sx1272_irq(void)
 {
@@ -828,7 +857,11 @@ void sx1272_clrIrqReceiver(void)
 
 bool sx1272_setRegion(sx_region_t region)
 {
-	bool success = sx1272_setChannel(region.channel) && sx1272_setPower(region.dBm);
+	bool success = sx1272_setChannel(region.channel);
+	if(success)
+		success = sx1272_setPower(region.dBm);
+	if(success)
+		success = sx1272_setBandwidth(region.bw);
 
 	if(success)
 		sx1272_region = region;

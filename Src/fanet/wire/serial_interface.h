@@ -55,6 +55,7 @@
 #define CMD_ADDR				'A'
 #define CMD_CONFIG				'C'
 #define CMD_MODE				'M'
+#define CMD_ZONE				'Z'
 
 #define CMD_RX_FRAME			"F"
 
@@ -119,6 +120,8 @@
  * Address: 		#FNA manufacturer(hex),id(hex)								note: w/o address is returned
  * Config: 		#FNC airType(0..7),onlinelogging(0..1)[,groundType(0..F in hex)]			note: type see protocol.txt
  * Mode:		#FNM 0..1										note: 0=flying(default), 1=ground
+ * Zone:		#FNZ [0..6]						note: w/o parameter current zone is returned (-1 = undecided)
+ * 												note2: zone will be set automatically upon #FNS
  *
  *
  * Receive a Frame:	#FNF src_manufacturer,src_id,broadcast,signature,type,payloadlength,payload
@@ -159,6 +162,7 @@ private:
 	void fanet_cmd_config(char *ch_str);
 	void fanet_cmd_mode(char *ch_str);
 	void fanet_cmd_transmit(char *ch_str);
+	void fanet_cmd_zone(char *ch_str);
 
 	/* Dongle Commands */
 	void dongle_eval(char *str);
