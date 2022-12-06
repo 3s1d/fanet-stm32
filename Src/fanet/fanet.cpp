@@ -24,7 +24,6 @@ static uint8_t fanet_sxexec = 0;
 	static uint16_t casw_ppsIrq = 0;
 	static uint16_t casw_ppsExec = 0;
 	static uint32_t casw_ppsTstamp = 0;
-	static uint32_t casw_nextPps = UINT32_MAX;
 #endif
 
 void fanet_init(serial_t *serial)
@@ -42,7 +41,7 @@ void fanet_init(serial_t *serial)
 
 	/* FLARM */
 #ifdef FLARM
-	if(casw.begin(fmac.myAddr) == false)
+	if(CasWrapper::getInstance().begin(fmac.myAddr) == false)
 		serial_int.print_line(FA_REPLYE_FLARMADDRISSUE);
 #endif
 
@@ -77,16 +76,6 @@ void fanet_loop(void)
 
 	/* FLARM */
 #ifdef FLARM
-
-	/* execute scheduled pps */
-	uint32_t t = HAL_GetTick();
-	if(t >= casw_nextPps)
-	{
-		casw.pps();
-		casw.handle(t);
-		casw_nextPps = UINT32_MAX;
-	}
-
 	/* pps signal */
 	if(casw_ppsIrq != casw_ppsExec)
 	{
@@ -95,22 +84,15 @@ void fanet_loop(void)
 		/* get pps timestamp */
 		uint32_t prim = __get_PRIMASK();
 		__disable_irq();
-		volatile uint32_t local_tstamp = casw_ppsTstamp;
+		volatile const uint32_t local_tstamp = casw_ppsTstamp;
 		if (!prim)
 			__enable_irq();
 
-		/* pps not yet happend, trigger now */
-		if(casw_nextPps != UINT32_MAX)
-		{
-			casw.pps();
-			casw.handle(t);
-		}
-
-		/* bring forward pps by 15ms */
-		casw_nextPps = local_tstamp + 985;
+		/* pps w/ recorded timestamp */
+		CasWrapper::getInstance().pps(local_tstamp);
 	}
 
 	/* regular execution */
-	casw.handle(HAL_GetTick());
+	CasWrapper::getInstance().handle(HAL_GetTick());
 #endif
 }

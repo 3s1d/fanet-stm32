@@ -131,7 +131,18 @@ void Serial_Interface::fanet_cmd_state(char *ch_str)
 	app.set(lat, lon, alt, speed, climb, heading, turnrate, qneOffset);
 
 #ifdef FLARM
-	casw.update_position(lat, lon, alt+sep, speed, climb, heading, &t);
+	CasWrapper::gpsdata_t gnss = {0};
+	gnss.lat = lat;
+	gnss.lon = lon;
+	gnss.alt = alt;
+	gnss.sep = sep;
+	gnss.speed_kmh = speed;
+	gnss.climb = climb;
+	gnss.heading = heading;
+	gnss.t = t;
+	gnss.valid = true;
+
+	CasWrapper::getInstance().updateGnss(HAL_GetTick(), gnss);
 #else
 	if(t.tm_sec)
 	{
@@ -199,7 +210,7 @@ void Serial_Interface::fanet_cmd_addr(char *ch_str)
 	{
 #ifdef FLARM
 		//note: for now we ignore the manufacturer
-		casw.set_address(id);
+		CasWrapper::getInstance().setAddress(id);
 #endif
 		print_line(FN_REPLY_OK);
 	}
@@ -252,9 +263,9 @@ void Serial_Interface::fanet_cmd_config(char *ch_str)
 #ifdef FLARM
 		/* set FLARM type */
 		if(type == App::paraglider)
-			casw.set_aircraft_type(AT_SOFT_HG);
+			CasWrapper::getInstance().setAircraftType(AT_SOFT_HG);
 		else if(type == App::hangglider)
-			casw.set_aircraft_type(AT_FIXED_HG);
+			CasWrapper::getInstance().setAircraftType(AT_FIXED_HG);
 #endif
 
 		/* set FANET type */
@@ -529,7 +540,7 @@ void Serial_Interface::dongle_cmd_power(char *ch_str)
 
 #ifdef FLARM
 	if(!atoi(ch_str))
-		casw.do_flarm = false;
+		CasWrapper::getInstance().do_flarm = false;
 #endif
 
 	/* set status */
@@ -742,7 +753,7 @@ void Serial_Interface::flarm_cmd_power(char *ch_str)
 	{
 		/* report armed state */
 		char buf[64];
-		snprintf(buf, sizeof(buf), "%s%c %d\n", FLARM_CMD_START, CMD_POWER, casw.do_flarm);
+		snprintf(buf, sizeof(buf), "%s%c %d\n", FLARM_CMD_START, CMD_POWER, CasWrapper::getInstance().do_flarm);
 		print(buf);
 		return;
 	}
@@ -753,7 +764,7 @@ void Serial_Interface::flarm_cmd_power(char *ch_str)
 		fmac.setPower(true);
 
 	/* set status */
-	casw.do_flarm = !!atoi(ch_str);
+	CasWrapper::getInstance().do_flarm = !!atoi(ch_str);
 	print_line(FA_REPLY_OK);
 }
 
@@ -762,12 +773,12 @@ void Serial_Interface::flarm_cmd_expires(char *ch_str)
 	if(myserial == NULL)
 		return;
 
-	const struct tm *t = casw.get_expirationDate();
-	if(t == NULL)
-		return;
+	const time_t expt = CasWrapper::getInstance().getExpirationDate();
+	struct tm t;
+	gmtime_r(&expt, &t);
 
 	char buf[64];
-	snprintf(buf, sizeof(buf), "%s%c %d,%d,%d\n", FLARM_CMD_START, CMD_EXPIRES, t->tm_year, t->tm_mon, t->tm_mday);
+	snprintf(buf, sizeof(buf), "%s%c %d,%d,%d\n", FLARM_CMD_START, CMD_EXPIRES, t.tm_year, t.tm_mon, t.tm_mday);
 	print(buf);
 }
 

@@ -21,7 +21,7 @@
 #ifdef FLARM
 #define FLARM_CMD_START			"#FA"
 #endif
-#define SEPARATOR			','
+#define SEPARATOR				','
 
 
 /* Fanet Replies */
