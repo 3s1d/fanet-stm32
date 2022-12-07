@@ -133,17 +133,20 @@ extern "C" {
 //LORA MODES:
 #define	LORA_SLEEP_MODE					0x80
 #define LORA_STANDBY_MODE				0x81
+#define LORA_FSTX_MODE					0x82
 #define LORA_TX_MODE					0x83
 #define LORA_RXCONT_MODE				0x85
 #define LORA_RXSINGLE_MODE				0x86
 #define LORA_CAD_MODE					0x87
 #define LORA_MODE_MASK					0x87
-#define LORA_STANDBY_FSK_REGS_MODE			0xC1
+#define LORA_STANDBY_FSK_REGS_MODE		0xC1
 
 //GFSK MODES:
 #define GFSK_SLEEP_MODE					0x10
 #define GFSK_FSTX_MODE					0x12
 #define GFSK_TX_MODE					0x13
+
+#define SX_IN_X_TX_MODE(reg)				(((reg)&0x07) == 0x02 || ((reg)&0x07) == 0x03)
 
 //LORA BANDWIDTH:
 #define 	BW_125					0x00
