@@ -135,6 +135,7 @@ extern "C" {
 #define LORA_STANDBY_MODE				0x81
 #define LORA_FSTX_MODE					0x82
 #define LORA_TX_MODE					0x83
+#define LORA_FSRX_MODE					0x84
 #define LORA_RXCONT_MODE				0x85
 #define LORA_RXSINGLE_MODE				0x86
 #define LORA_CAD_MODE					0x87
@@ -147,6 +148,7 @@ extern "C" {
 #define GFSK_TX_MODE					0x13
 
 #define SX_IN_X_TX_MODE(reg)				(((reg)&0x07) == 0x02 || ((reg)&0x07) == 0x03)
+#define SX_IN_RX_MODE(reg)					(((reg)&0x87) >= LORA_FSRX_MODE)
 
 //LORA BANDWIDTH:
 #define 	BW_125					0x00
@@ -243,9 +245,9 @@ uint8_t sx1272_getBandwidth(void);
 
 void sx1272_setLowDataRateOptimize(bool ldro);
 
-void sx1272_setPayloadCrc(bool crc);
+bool sx1272_setPayloadCrc(bool crc);
 
-void sx1272_setSpreadingFactor(uint8_t spr);
+bool sx1272_setSpreadingFactor(uint8_t spr);
 uint8_t sx1272_getSpreadingFactor(void);
 
 bool sx1272_setCodingRate(uint8_t cr);
@@ -254,7 +256,7 @@ uint8_t sx1272_getCodingRate(void);
 bool sx1272_setChannel(uint32_t ch);
 uint32_t sx1272_getChannel(void);
 
-void sx1272_setExplicitHeader(bool exhdr);
+bool sx1272_setExplicitHeader(bool exhdr);
 void sx1272_setLnaGain(uint8_t gain, bool lnaboost);
 
 //note: we currently only support PA_BOOST

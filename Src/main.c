@@ -130,7 +130,7 @@ int main(void)
 	/* Debug */
 #ifdef DEBUG
 	/* semihosting */
-	initialise_monitor_handles();
+//	initialise_monitor_handles();
 
 	printf("### DEBUG Enabled\n");
 #endif

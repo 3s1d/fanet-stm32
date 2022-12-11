@@ -312,6 +312,7 @@ void Serial_Interface::fanet_cmd_mode(char *ch_str)
 
 /* Transmit: #FNT type,dest_manufacturer,dest_id,forward,ack_required,length,length*2hex[,signature] */
 //note: all in HEX
+extern uint8_t sx_reg_backup[2][111];
 void Serial_Interface::fanet_cmd_transmit(char *ch_str)
 {
 #if SERIAL_debug_mode > 0

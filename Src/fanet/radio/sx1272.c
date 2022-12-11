@@ -23,6 +23,7 @@ SPI_HandleTypeDef *sx1272_spi = NULL;
 float sx_dutycycle = 0.0f;
 float sx_airtime = 0.0f;
 sx_region_t sx1272_region = {.channel = 0, .dBm = 0, .bw = 0};
+static bool sx_payloadCrc = false;
 
 #ifdef SX1272_DO_FSK
 #define SX_REG_BACKUP_POR			0
@@ -144,7 +145,8 @@ bool sx_setOpMode(uint8_t mode)
 			return false;
 
 		opmode = sx_readRegister(REG_OP_MODE);
-	}while(SX_IN_X_TX_MODE(opmode));
+	}while(SX_IN_X_TX_MODE(opmode) ||
+			(SX_IN_RX_MODE(opmode) && (sx_readRegister(REG_MODEM_STAT) & 0x0B)));	//in tx mode or currently something receiving
 
 	/* set mode */
 	sx_writeRegister(REG_OP_MODE, mode);
@@ -181,19 +183,23 @@ bool sx_setOpMode(uint8_t mode)
 		break;
 	}
 
-	/* wait for frequency synthesis, 10ms timeout */
+	/* wait for frequency synthesis, 70ms timeout */
 	//note: LORA_CAD_MODE may instantaneously end in LORA_STANDBY_MODE
 	opmode = 0;
 	const uint8_t mask = (mode == LORA_CAD_MODE) ? 0xf9 : 0xff;
-	for(int i=0; i<10 && opmode != (mode & mask); i++)
+	for(int i=0; i<70 && opmode != (mode & mask); i++)
 	{
 		HAL_Delay(1);
 		opmode = sx_readRegister(REG_OP_MODE) & mask;
+
+		/* resend mode */
+		if(i && i%20 == 0)
+			sx_writeRegister(REG_OP_MODE, mode);
 	}
 
 #ifdef DEBUG
-	if((mode&mask) != opmode)
-		debug_printf("mode change failed. is%02X set%02X\n", opmode, mode);
+//	if((mode&mask) != opmode)
+//		debug_printf("mode change failed. is%02X set%02X\n", opmode, mode);
 #endif
 	return (mode&mask) == opmode;
 }
@@ -246,7 +252,6 @@ float sx_expectedAirTime_ms(void)
 
 		float air_time = (8.0f * nbytes) / bitrate * 1e3;
 		return air_time;
-
 	}
 #endif
 	/* LORA */
@@ -447,24 +452,23 @@ bool sx1272_setBandwidth(uint8_t bw)
 	uint8_t opmode = sx_getOpMode();
 
 	/* set appropriate mode */
-	if(opmode != LORA_STANDBY_MODE)
-		sx_setOpMode(LORA_STANDBY_MODE);
+	if(opmode != LORA_STANDBY_MODE &&sx_setOpMode(LORA_STANDBY_MODE) == false)
+		return false;
 
 	uint8_t config1 = sx_readRegister(REG_MODEM_CONFIG1);
-	config1 = (bw&BW_MASK) | (config1&~BW_MASK);
+	config1 = (bw&BW_MASK) | (config1&(~BW_MASK));
+	sx_writeRegister(REG_MODEM_CONFIG1, config1);
+
+	/* adjust low data rate for high spread factor */
 	if(bw == BW_125)
 	{
 		uint8_t sf = sx1272_getSpreadingFactor();
 		if(sf == SF_11 || sf == SF_12)
 			sx1272_setLowDataRateOptimize(true);
 	}
-	sx_writeRegister(REG_MODEM_CONFIG1, config1);
 
 	/* restore state */
-	if(opmode != LORA_STANDBY_MODE)
-		return sx_setOpMode(opmode);
-	else
-		return true;
+	return opmode == LORA_STANDBY_MODE || sx_setOpMode(opmode);
 }
 
 uint8_t sx1272_getBandwidth(void)
@@ -492,32 +496,33 @@ void sx1272_setLowDataRateOptimize(bool ldro)
 		sx_setOpMode(opmode);
 }
 
-void sx1272_setPayloadCrc(bool crc)
+bool sx1272_setPayloadCrc(bool crc)
 {
+	sx_payloadCrc = crc;
+
 	/* store state */
 	uint8_t opmode = sx_getOpMode();
 
 	/* set appropriate mode */
-	if(opmode != LORA_STANDBY_MODE)
-		sx_setOpMode(LORA_STANDBY_MODE);
+	if(opmode != LORA_STANDBY_MODE && sx_setOpMode(LORA_STANDBY_MODE) == false)
+		return false;
 
 	uint8_t config1 = sx_readRegister(REG_MODEM_CONFIG1);
-	config1 = (config1&0xFD) | !!crc<<1;
+	config1 = (config1&0xFD) | (!!crc)<<1;
 	sx_writeRegister(REG_MODEM_CONFIG1, config1);
 
 	/* restore state */
-	if(opmode != LORA_STANDBY_MODE)
-		sx_setOpMode(opmode);
+	return opmode == LORA_STANDBY_MODE || sx_setOpMode(opmode);
 }
 
-void sx1272_setSpreadingFactor(uint8_t spr)
+bool sx1272_setSpreadingFactor(uint8_t spr)
 {
 	/* store state */
 	uint8_t opmode = sx_getOpMode();
 
 	/* set appropriate mode */
-	if(opmode != LORA_STANDBY_MODE)
-		sx_setOpMode(LORA_STANDBY_MODE);
+	if(opmode != LORA_STANDBY_MODE && sx_setOpMode(LORA_STANDBY_MODE) == false)
+		return false;
 
 	uint8_t config2 = sx_readRegister(REG_MODEM_CONFIG2);
 	config2 = (spr&SF_MASK) | (config2&~SF_MASK);
@@ -543,8 +548,7 @@ void sx1272_setSpreadingFactor(uint8_t spr)
 	}
 
 	/* restore state */
-	if(opmode != LORA_STANDBY_MODE)
-		sx_setOpMode(opmode);
+	return opmode == LORA_STANDBY_MODE || sx_setOpMode(opmode);
 }
 
 uint8_t sx1272_getSpreadingFactor(void)
@@ -562,7 +566,7 @@ bool sx1272_setCodingRate(uint8_t cr)
 		return false;
 
 	/* set appropriate mode */
-	if(opmode != LORA_STANDBY_MODE && !sx_setOpMode(LORA_STANDBY_MODE))
+	if(opmode != LORA_STANDBY_MODE && sx_setOpMode(LORA_STANDBY_MODE) == false)
 		return false;
 
 	uint8_t config1 = sx_readRegister(REG_MODEM_CONFIG1);
@@ -570,10 +574,7 @@ bool sx1272_setCodingRate(uint8_t cr)
 	sx_writeRegister(REG_MODEM_CONFIG1, config1);
 
 	/* restore state */
-	if(opmode != LORA_STANDBY_MODE)
-		return sx_setOpMode(opmode);
-	else
-		return true;
+	return opmode == LORA_STANDBY_MODE || sx_setOpMode(opmode);
 }
 
 uint8_t sx1272_getCodingRate(void)
@@ -589,8 +590,8 @@ bool sx1272_setChannel(uint32_t ch)
 	uint8_t opmode = sx_getOpMode();
 
 	/* set appropriate mode */
-	if(opmode != LORA_STANDBY_MODE)
-		sx_setOpMode(LORA_STANDBY_MODE);
+	if(opmode != LORA_STANDBY_MODE && sx_setOpMode(LORA_STANDBY_MODE) == false)
+		return false;
 
 	uint8_t freq3 = (ch >> 16) & 0x0FF;		// frequency channel MSB
 	uint8_t freq2 = (ch >> 8) & 0xFF;		// frequency channel MID
@@ -601,11 +602,7 @@ bool sx1272_setChannel(uint32_t ch)
 	sx_writeRegister(REG_FRF_LSB, freq1);
 
 	/* restore state */
-	bool ret = true;
-	if(opmode != LORA_STANDBY_MODE)
-		ret = sx_setOpMode(opmode);
-
-	return ret;
+	return opmode == LORA_STANDBY_MODE || sx_setOpMode(opmode);
 }
 
 uint32_t sx1272_getChannel(void)
@@ -618,23 +615,22 @@ uint32_t sx1272_getChannel(void)
 	return ch;
 }
 
-void sx1272_setExplicitHeader(bool exhdr)
+bool sx1272_setExplicitHeader(bool exhdr)
 {
 	/* store state */
 	uint8_t opmode = sx_getOpMode();
 
 	/* set appropriate mode */
-	if(opmode != LORA_STANDBY_MODE)
-		sx_setOpMode(LORA_STANDBY_MODE);
+	if(opmode != LORA_STANDBY_MODE && sx_setOpMode(LORA_STANDBY_MODE) == false)
+		return false;
 
 	/* bit2: 0->explicit 1->implicit */
 	uint8_t config1 = sx_readRegister(REG_MODEM_CONFIG1);
-	config1 = (config1&0xFB) | !exhdr<<2;
+	config1 = (config1&0xFB) | (!exhdr)<<2;
 	sx_writeRegister(REG_MODEM_CONFIG1, config1);
 
 	/* restore state */
-	if(opmode != LORA_STANDBY_MODE)
-		sx_setOpMode(opmode);
+	return opmode == LORA_STANDBY_MODE || sx_setOpMode(opmode);
 }
 
 void sx1272_setLnaGain(uint8_t gain, bool lnaboost)
@@ -666,8 +662,8 @@ bool sx1272_setPower(int pwr)
 	uint8_t opmode = sx_getOpMode();
 
 	/* set appropriate mode */
-	if(opmode != LORA_STANDBY_MODE)
-		sx_setOpMode(LORA_STANDBY_MODE);
+	if(opmode != LORA_STANDBY_MODE && sx_setOpMode(LORA_STANDBY_MODE) == false)
+		return false;
 
 	if(pwr >= 18)
 	{
@@ -686,10 +682,7 @@ bool sx1272_setPower(int pwr)
 	sx_writeRegister(REG_PA_CONFIG, 0x80 | pwr);
 
 	/* restore state */
-	if(opmode != LORA_STANDBY_MODE)
-		return sx_setOpMode(opmode);
-	else
-		return true;
+	return opmode == LORA_STANDBY_MODE || sx_setOpMode(opmode);
 }
 
 bool sx1272_setArmed(bool mode)
@@ -812,14 +805,14 @@ void sx1272_setIrqReceiver(irq_callback cb)
 	sx_writeRegister(REG_IRQ_FLAGS, 0xFF);
 
 	sx1272_irq_cb = cb;
-//	HAL_NVIC_EnableIRQ(FN_DIO0_EXTI12_EXTI_IRQn);
+	HAL_NVIC_EnableIRQ(SXDIO0_EXTI8_EXTI_IRQn);
 }
 
 void sx1272_clrIrqReceiver(void)
 {
 	sx_setOpMode(LORA_STANDBY_MODE);
 
-//	HAL_NVIC_DisableIRQ(FN_DIO0_EXTI12_EXTI_IRQn);
+	HAL_NVIC_DisableIRQ(SXDIO0_EXTI8_EXTI_IRQn);
 	sx1272_irq_cb = NULL;
 }
 
@@ -874,7 +867,9 @@ int sx1272_sendFrame(uint8_t *data, int length, uint8_t cr)
 	//todo: check fifo is empty, no rx data..
 
 	/* adjust coding rate */
+	//note: crc payload flag seems to get lost due to unknown issues!?!? resetting here just to be sure... fixme
 	sx1272_setCodingRate(cr);
+	sx1272_setPayloadCrc(sx_payloadCrc);
 
 	/* upload frame */
 	sx_writeFifo(0x00, data, length);
@@ -1049,11 +1044,11 @@ int sx1272_sendFrame_FSK(sx_fsk_conf_t *conf, uint8_t *data, int num_data)
 
 	/* start TX */
 	//note: seq: tx on start, from transmit -> lowpower, lowpower = seq_off (w/ init mode), start
-#ifdef FN_RX_Pin
-	HAL_GPIO_WritePin(FN_RX_GPIO_Port, FN_RX_Pin, GPIO_PIN_RESET);
+#ifdef SXRX_Pin
+		HAL_GPIO_WritePin(SXRX_GPIO_Port, SXRX_Pin, GPIO_PIN_RESET);
 #endif
-#ifdef FN_TX_Pin
-	HAL_GPIO_WritePin(FN_TX_GPIO_Port, FN_TX_Pin, GPIO_PIN_SET);
+#ifdef SXTX_Pin
+		HAL_GPIO_WritePin(SXTX_GPIO_Port, SXTX_Pin, GPIO_PIN_SET);
 #endif
 	sx_writeRegister_nostore(REG_SEQ_CONFIG1, 0x80 | 0x10);
 
