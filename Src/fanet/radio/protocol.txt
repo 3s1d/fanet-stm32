@@ -496,16 +496,23 @@ Manufacturer IDs:
 0x07		SoftRF
 0x08		GXAircom
 0x09		Airtribune
-0x10		alfapilot
-...
-0x11		FANET+ (incl FLARM. Currently Skytraxx, Naviter, and Skybean)
-...
 0x0A		FLARM
+...
+0x10		alfapilot
+0x11		FANET+ (incl FLARM. Currently Skytraxx, Naviter, and Skybean)
 ...
 0x20		XC Tracer
 ...
+0xCB		Cloudbuddy
+...
+0xDD		[reserved for compatibility issues]
+0xDE		[reserved for compatibility issues]
+0xDF		[reserved for compatibility issues]
+...
 0xE0		OGN Tracker
 0xE4		4aviation
+...
+0xF0		[reserved for compatibility issues]
 ...
 0xFA		Various
 		0x0001-0x00FF		GetroniX
@@ -514,10 +521,3 @@ Manufacturer IDs:
 0xFD		Unregistered Devices
 0xFE		[Multicast]
 0xFF		[reserved]
-
-Reserved for compatibility issues:
-0xDD
-0xDE
-0xDF
-0xF0
-0x20
