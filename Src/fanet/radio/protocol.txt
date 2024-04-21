@@ -373,6 +373,7 @@ Hardware Subtype + Build Date
 			0x03 Skytraxx Beacon
 			0x04 Skytraxx 4.0
 			0x05 Skytraxx 5
+			0x06 Skytraxx 5mini
 			0x10 Naviter Oudie 5
 			0x11 Naviter Blade
 			0x12 Naviter Oudie N
