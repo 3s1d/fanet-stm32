@@ -498,6 +498,7 @@ Manufacturer IDs:
 0x08		GXAircom
 0x09		Airtribune
 0x0A		FLARM
+0x0B		FlyBeeper
 ...
 0x10		alfapilot
 0x11		FANET+ (incl FLARM. Currently Skytraxx, Naviter, and Skybean)
