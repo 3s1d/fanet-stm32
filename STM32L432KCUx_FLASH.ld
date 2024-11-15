@@ -101,7 +101,7 @@ SECTIONS
     . = ALIGN(8);
   } >FLASH
 
-  .ARM.extab   : 
+  .ARM.extab  (READONLY) : 
   { 
   . = ALIGN(8);
   *(.ARM.extab* .gnu.linkonce.armextab.*)
@@ -115,7 +115,7 @@ SECTIONS
 	. = ALIGN(8);
   } >FLASH
 
-  .preinit_array     :
+  .preinit_array   (READONLY)  :
   {
 	. = ALIGN(8);
     PROVIDE_HIDDEN (__preinit_array_start = .);
@@ -124,7 +124,7 @@ SECTIONS
 	. = ALIGN(8);
   } >FLASH
   
-  .init_array :
+  .init_array (READONLY) :
   {
 	. = ALIGN(8);
     PROVIDE_HIDDEN (__init_array_start = .);
@@ -133,7 +133,7 @@ SECTIONS
     PROVIDE_HIDDEN (__init_array_end = .);
 	. = ALIGN(8);
   } >FLASH
-  .fini_array :
+  .fini_array (READONLY) :
   {
 	. = ALIGN(8);
     PROVIDE_HIDDEN (__fini_array_start = .);

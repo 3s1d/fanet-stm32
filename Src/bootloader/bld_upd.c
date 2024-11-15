@@ -85,7 +85,10 @@ void bld_install(void)
 			uint32_t missing = fromIdx+8 - HEX2Cxloader_SIZE;
 			//printf("missing: %lu\n", missing);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
 			memcpy(buf, (uint8_t *) &xloader_bin[fromIdx], 8-missing);
+#pragma GCC diagnostic pop
 			memset(&buf[8-missing], 0xFF, missing);
 
 			HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, toAddr, *((uint64_t *)buf));
