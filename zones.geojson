@@ -1,0 +1,243 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "EU868",
+        "index": 6
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              180,
+              85.06
+            ],
+            [
+              -180,
+              85.06
+            ],
+            [
+              -180,
+              -85.06
+            ],
+            [
+              180,
+              -85.06
+            ],
+            [
+              180,
+              85.06
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "IL918",
+        "index": 5
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              36,
+              29
+            ],
+            [
+              34,
+              29
+            ],
+            [
+              34,
+              34
+            ],
+            [
+              36,
+              34
+            ],
+            [
+              36,
+              29
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "IN866",
+        "index": 2
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              89,
+              40
+            ],
+            [
+              69,
+              40
+            ],
+            [
+              69,
+              5
+            ],
+            [
+              89,
+              5
+            ],
+            [
+              89,
+              40
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "AS920",
+        "index": 4
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              146,
+              47
+            ],
+            [
+              89,
+              47
+            ],
+            [
+              89,
+              21
+            ],
+            [
+              146,
+              21
+            ],
+            [
+              146,
+              47
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "KR923",
+        "index": 3
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              130,
+              39
+            ],
+            [
+              124,
+              39
+            ],
+            [
+              124,
+              34
+            ],
+            [
+              130,
+              34
+            ],
+            [
+              130,
+              39
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "AU920",
+        "index": 1
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              179,
+              -10
+            ],
+            [
+              110,
+              -10
+            ],
+            [
+              110,
+              -48
+            ],
+            [
+              179,
+              -48
+            ],
+            [
+              179,
+              -10
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "US920",
+        "index": 0
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              -30,
+              85.06
+            ],
+            [
+              -169,
+              85.06
+            ],
+            [
+              -169,
+              -85.06
+            ],
+            [
+              -30,
+              -85.06
+            ],
+            [
+              -30,
+              85.06
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      }
+    }
+  ]
+}
