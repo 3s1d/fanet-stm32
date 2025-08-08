@@ -287,7 +287,7 @@ bit 7-4		Type
 			14:   Distress call
 			15:   Distress call automatically
 			Rest: TBD
-bit 3-1		TBD
+bit 3-1		TBD (should be set to 0)
 bit 0		Online Tracking
 
 ------------
